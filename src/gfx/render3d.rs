@@ -321,6 +321,41 @@ pub fn draw_billboard(tex: &Texture2D, pos: Vec3, size: f32, color: Color, right
     });
 }
 
+/// Like [`draw_billboard`] but samples only the `uv` rectangle `(u0, v0, u1, v1)` of the texture.
+pub fn draw_billboard_uv(
+    tex: &Texture2D,
+    pos: Vec3,
+    size: f32,
+    color: Color,
+    right: Vec3,
+    up: Vec3,
+    uv: (f32, f32, f32, f32),
+) {
+    let (r, u) = (right * size * 0.5, up * size * 0.5);
+    let c = [
+        (color.r * 255.0) as u8,
+        (color.g * 255.0) as u8,
+        (color.b * 255.0) as u8,
+        (color.a * 255.0) as u8,
+    ];
+    let v = |p: Vec3, uv: Vec2| Vertex {
+        position: p,
+        uv,
+        color: c,
+        normal: Vec4::ZERO,
+    };
+    draw_mesh(&Mesh {
+        vertices: vec![
+            v(pos - r + u, vec2(uv.0, uv.1)),
+            v(pos + r + u, vec2(uv.2, uv.1)),
+            v(pos + r - u, vec2(uv.2, uv.3)),
+            v(pos - r - u, vec2(uv.0, uv.3)),
+        ],
+        indices: vec![0, 1, 2, 0, 2, 3],
+        texture: Some(tex.clone()),
+    });
+}
+
 /// Streak between two world points with the given width, facing the camera at `eye`.
 pub fn draw_streak(a: Vec3, b: Vec3, width: f32, color: Color, eye: Vec3) {
     let side = (b - a).cross(a - eye).normalize_or_zero() * width * 0.5;

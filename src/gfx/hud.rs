@@ -23,6 +23,8 @@ pub struct HudData<'a> {
     pub show_help: bool,
     pub fov_deg: f32,
     pub ui_scale: f32,
+    /// Name of the active station tab (shown in the status line).
+    pub tab: &'static str,
 }
 
 fn kind_color(k: Kind) -> Color {
@@ -31,7 +33,20 @@ fn kind_color(k: Kind) -> Color {
         Kind::Planet => EMBER,
         Kind::Moon => Color::new(0.7, 0.7, 0.75, 1.0),
         Kind::Ship => Color::new(1.0, 0.8, 0.2, 1.0),
-        Kind::Asteroid => Color::new(0.5, 0.45, 0.4, 1.0),
+        Kind::Asteroid | Kind::Debris => Color::new(0.5, 0.45, 0.4, 1.0),
+        Kind::Projectile => Color::new(1.0, 0.4, 0.2, 1.0),
+    }
+}
+
+/// Contact colour: hostiles red, allies green, otherwise by kind.
+fn ent_color(e: &crate::sim::Entity) -> Color {
+    use crate::sim::ops::Faction;
+    if e.faction.hostile_to(Faction::Mars) && matches!(e.kind, Kind::Ship | Kind::Station) {
+        Color::new(1.0, 0.3, 0.25, 1.0)
+    } else if e.faction == Faction::Mars && e.kind == Kind::Ship {
+        Color::new(0.4, 1.0, 0.5, 1.0)
+    } else {
+        kind_color(e.kind)
     }
 }
 
@@ -42,6 +57,8 @@ fn kind_name(k: Kind) -> &'static str {
         Kind::Moon => "MOON",
         Kind::Ship => "SHIP",
         Kind::Asteroid => "ASTEROID",
+        Kind::Debris => "DEBRIS",
+        Kind::Projectile => "ORDNANCE",
     }
 }
 
@@ -221,7 +238,7 @@ pub fn draw_space(assets: &Assets, d: &HudData) {
             if p.x < -50.0 || p.x > sw + 50.0 || p.y < -50.0 || p.y > sh + 50.0 || w <= 0.0 {
                 continue;
             }
-            let col = kind_color(e.kind);
+            let col = ent_color(e);
             let focal = sh / (2.0 * (d.fov_deg.to_radians() / 2.0).tan());
             let half = (e.radius / w * focal).clamp(10.0 * t, sh * 0.45);
             if is_target {
@@ -254,13 +271,13 @@ pub fn draw_space(assets: &Assets, d: &HudData) {
 
     // ---- target panel (top right)
     if let Some(tg) = d.target.and_then(|id| d.world.get(id)) {
-        let (w, h) = (210.0 * fs / 1.5, 72.0 * fs / 1.5);
+        let (w, h) = (210.0 * fs / 1.5, 92.0 * fs);
         let (x, y) = (sw - w - sw * 0.10, sh * 0.2);
         draw_rectangle(x, y, w, h, PANEL);
         draw_rectangle_lines(x, y, w, h, t, Color::new(1.0, 0.85, 0.2, 0.6));
         let rel = tg.pos - me.pos;
         let closing = -(tg.vel - me.vel).dot(rel.normalize_or_zero());
-        let col = kind_color(tg.kind);
+        let col = ent_color(tg);
         pixfont::draw(
             assets,
             "TARGET",
@@ -294,6 +311,32 @@ pub fn draw_space(assets: &Assets, d: &HudData) {
             fs,
             CYAN,
         );
+        if let Some(tops) = tg.ops.as_deref() {
+            let known = me
+                .ops
+                .as_deref()
+                .is_some_and(|o| d.target.is_some_and(|t| o.scan.done.contains(&t)));
+            let txt = if known {
+                format!(
+                    "HUL {:.0}% SHD {:.0}%",
+                    tops.hull / tops.max_hull * 100.0,
+                    tops.shield_total() / (tops.max_shield * 4.0).max(1.0) * 100.0
+                )
+            } else {
+                "HUL ?? SHD ?? (SCAN)".to_owned()
+            };
+            pixfont::draw(assets, &txt, x + 6.0 * fs, y + 65.0 * fs, fs, BONE);
+            if tops.disabled {
+                pixfont::draw(
+                    assets,
+                    "DISABLED",
+                    x + 6.0 * fs,
+                    y + 77.0 * fs,
+                    fs,
+                    Color::new(0.4, 1.0, 0.5, 1.0),
+                );
+            }
+        }
         // off-screen pointer
         let off = project(&d.view_proj, tg.pos, sw, sh)
             .is_none_or(|(p, _)| p.x < 0.0 || p.x > sw || p.y < 0.0 || p.y > sh);
@@ -354,8 +397,11 @@ pub fn draw_space(assets: &Assets, d: &HudData) {
         let col = if d.target == Some(id) {
             Color::new(1.0, 0.85, 0.2, 1.0)
         } else {
-            kind_color(e.kind)
+            ent_color(e)
         };
+        if matches!(e.kind, Kind::Debris | Kind::Projectile) && d.target != Some(id) {
+            continue;
+        }
         if e.kind == Kind::Asteroid && e.radius < 100.0 {
             draw_rectangle(p.x, p.y, t, t, Color::new(col.r, col.g, col.b, 0.5));
             continue;
@@ -384,10 +430,98 @@ pub fn draw_space(assets: &Assets, d: &HudData) {
     );
     pixfont::draw_centered(assets, "SCOPE", rc.x, rc.y + rr + 4.0, fs, BONE);
 
+    // ---- combat status (bottom left)
+    if let Some(o) = me.ops.as_deref() {
+        let (x, y) = (sw * 0.095, sh * 0.685);
+        let lh = 11.0 * fs;
+        let bw = 54.0 * fs;
+        let bar = |bx: f32, by: f32, w: f32, f: f32, col: Color| {
+            draw_rectangle(bx, by, w, 6.0 * t, Color::new(0.0, 0.0, 0.0, 0.6));
+            draw_rectangle(bx, by, w * f.clamp(0.0, 1.0), 6.0 * t, col);
+        };
+        let hf = o.hull / o.max_hull;
+        let hcol = if hf > 0.5 {
+            Color::new(0.4, 0.9, 0.5, 1.0)
+        } else if hf > 0.25 {
+            Color::new(0.95, 0.75, 0.2, 1.0)
+        } else {
+            Color::new(0.95, 0.3, 0.25, 1.0)
+        };
+        draw_rectangle(x - 4.0, y - 4.0, bw + 54.0 * fs, lh * 6.0 + 8.0, PANEL);
+        pixfont::draw(assets, "HULL", x, y, fs, BONE);
+        bar(x + 26.0 * fs, y + 1.0, bw, hf, hcol);
+        pixfont::draw(assets, "SHLD", x, y + lh, fs, BONE);
+        for (i, lbl) in ["F", "A", "P", "S"].iter().enumerate() {
+            let f = o.shields[i] / o.max_shield.max(1.0);
+            let bx = x + 26.0 * fs + i as f32 * (bw / 4.0 + 1.0);
+            bar(bx, y + lh + 1.0, bw / 4.0 - 2.0, f, CYAN);
+            pixfont::draw(
+                assets,
+                lbl,
+                bx + 2.0,
+                y + lh + 8.0 * t,
+                fs.max(1.0),
+                Color::new(1.0, 1.0, 1.0, 0.5),
+            );
+        }
+        let heat = o.sys.heat[crate::sim::systems::Sys::Lances.idx()] / 100.0;
+        pixfont::draw(assets, "LNC", x, y + 2.0 * lh + 4.0, fs, BONE);
+        bar(
+            x + 26.0 * fs,
+            y + 2.0 * lh + 5.0,
+            bw,
+            heat,
+            if heat > 0.8 {
+                Color::new(0.95, 0.3, 0.25, 1.0)
+            } else {
+                EMBER
+            },
+        );
+        pixfont::draw(
+            assets,
+            &format!("LF {} SF {}", o.lance_freq, o.shield_freq),
+            x + 26.0 * fs + bw + 6.0,
+            y + 2.0 * lh + 4.0,
+            fs,
+            EMBER,
+        );
+        pixfont::draw(
+            assets,
+            &format!("TORP {} MISS {}", o.torpedoes, o.missiles),
+            x,
+            y + 3.0 * lh + 8.0,
+            fs,
+            if d.target.is_some() { CYAN } else { BONE },
+        );
+        pixfont::draw(
+            assets,
+            &format!("FUEL {:.0} CR {}", o.nav.fuel, o.cargo.credits),
+            x,
+            y + 4.0 * lh + 10.0,
+            fs,
+            BONE,
+        );
+        let nav = match (o.nav.warp, o.nav.autopilot) {
+            (Some((s, c)), _) => format!("WARP {} {:.0}%", s.name().to_uppercase(), c * 100.0),
+            (None, true) => "AUTOPILOT".to_owned(),
+            _ if o.mining.is_some() => "MINING".to_owned(),
+            _ => String::new(),
+        };
+        pixfont::draw(
+            assets,
+            &nav,
+            x,
+            y + 5.0 * lh + 12.0,
+            fs,
+            Color::new(0.4, 1.0, 0.5, 1.0),
+        );
+    }
+
     // ---- status line + messages + help
     let status = format!(
-        "{}  |  {}  |  ASSIST {}  |  {}",
+        "{}  |  {}  |  {}  |  ASSIST {}  |  {}",
         d.world.sector.name().to_uppercase(),
+        d.tab,
         if d.cockpit { "COCKPIT" } else { "CHASE" },
         if ship.assist { "ON" } else { "OFF" },
         if ship.brake { "BRAKING" } else { "" },
@@ -414,17 +548,32 @@ pub fn draw_space(assets: &Assets, d: &HudData) {
     if d.show_help {
         let lines = [
             "W/S THROTTLE  A/D YAW  UP/DOWN PITCH  Q/E ROLL",
-            "LEFT/RIGHT STRAFE  R/F UP/DOWN  SPACE BRAKE  X STOP",
-            "C CAMERA  T TARGET  G CLEAR  M FLIGHT ASSIST  H HELP",
+            "LEFT/RIGHT STRAFE  R/F UP/DOWN  SPACE BRAKE",
+            "ENTER/CLICK LANCES  Z TORPEDO  V MISSILE",
+            "[ ] LANCE FREQ  , . SHIELD FREQ  T TARGET/LOCK",
+            "N SCAN  U SWEEP  G CLEAR TARGET",
+            "P AUTOPILOT  O GO TO TARGET  L DOCK/UNDOCK",
+            "K MINE ASTEROID  C CAMERA  M FLIGHT ASSIST",
+            "F1-F7 STATIONS  TAB CREW AUTO  -/= VOLUME",
+            "F11 MUSIC  H HIDE THIS HELP",
         ];
+        let (x, y) = (sw * 0.2, sh * 0.19);
+        let lh = 9.0 * fs;
+        draw_rectangle(
+            x - 8.0,
+            y - 8.0,
+            48.0 * 6.0 * fs + 16.0,
+            lines.len() as f32 * lh + 12.0,
+            PANEL,
+        );
         for (i, l) in lines.iter().enumerate() {
-            pixfont::draw_centered(
+            pixfont::draw(
                 assets,
                 l,
-                c.x,
-                sh * 0.78 + i as f32 * 12.0 * fs,
+                x,
+                y + i as f32 * lh,
                 fs,
-                Color::new(0.85, 0.8, 0.7, 0.9),
+                Color::new(0.85, 0.8, 0.7, 0.95),
             );
         }
     }

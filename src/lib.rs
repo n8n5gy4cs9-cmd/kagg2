@@ -2,6 +2,8 @@
 
 pub mod app;
 pub mod assets;
+pub mod audio;
+pub mod board;
 pub mod gfx;
 pub mod meshgen;
 pub mod sim;

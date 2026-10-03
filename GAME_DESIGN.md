@@ -138,8 +138,10 @@ shots heard, reinforcements spawn at the airlock. Keycards Bronze → Silver →
 |---|---|
 | Global | F1–F7 stations, Tab pause, Esc menu, F5/F9 quicksave/load (T28) |
 | Helm | W/S throttle, A/D yaw, Q/E roll, ↑/↓ pitch (↓ = nose up), ←/→ strafe, R/F up/down, Space brake, X zero, LShift full, M assist, C camera, T/G target/clear, H help, B board, J warp |
-| Weapons | LMB/Space lance, R-click/Z torpedo, N missile, 0–9 frequency, T lock target |
-| Boarding | WASD move, mouse look, Space jump, C crouch, LMB fire, 1–6 weapon, E use, F flashlight |
+| Weapons | Enter/LMB (Helm tab) lance, Z torpedo, V missile (needs T lock), [ ] lance frequency, , . shield frequency |
+| Stations | F1–F7 tabs, Tab = toggle crew AUTO for the open station, N scan, U sweep, P autopilot, O go to target, L dock/undock, K mine, 1–3 power presets (Engineering), H hail (Comms) |
+| Audio | -/= master volume, F11 music on/off |
+| Boarding | WASD move, mouse look, Space jump, C crouch, LMB/Enter fire, 1–6 weapon, E use (doors auto-open; E at consoles, prisoners, alarm, airlock), Esc abort to ship |
 
 ## 5. Difficulty (T28)
 **Thrall** (easy): enemy damage ×0.6, aim error ×2. **Karl** (normal). **Jarl** (hard): enemy
@@ -148,3 +150,25 @@ damage ×1.4, enemy shield regen ×1.5, crew AI lag +1 s.
 ## 6. Multiplayer-friendliness (future)
 Everything player-driven goes through `Command` values applied to the sim at fixed ticks.
 A seat = (station, controller) where controller is `CrewAi` or `Human(player_id)`.
+
+## 7. As built in M1 (v0.18)
+- **Damage:** lance 14 × level × lance power; torpedo 140 (+ 90-unit splash), missile 55 (homing, 2.4 rad/s).
+  Shield facing is chosen from the attacker's bearing. Lance vs shield frequency: ±1 → ×2, ±2–3 → ×1, ≥4 → ×0.5.
+  Hull hits damage a random system (0.6 % of the overflow); hull < 12 % makes an AI ship surrender (boardable).
+- **Power:** reactor budget 6.0 (+20 %/level); six sliders 0–200 %; over-budget requests are scaled down.
+  Heat = power² × 4/s minus coolant share; ≥ 100 burns the system. < 50 % health degrades, 0 % = offline.
+- **Crew AI:** each of Helm/Weapons/Engineering/Damage/Science can run on AUTO (skill 0.7).
+- **Economy:** 12 commodities, per-station bias ±30 % and drift ±15 % every 90 s; Forge services at half price.
+- **Warp:** charge 6 s at nominal power; fuel cost 5 (same host) to ~40 (Mars → Jupiter). Warp gates deferred
+  (single system). Enemies respawn when you re-enter a sector.
+
+## 8. As built in M2 (v0.25)
+- **Trigger:** target a hostile ship that is *disabled* (hull < 12 %) or crippled (hull < 60 % and shields < 15 %), get within 450 units of its hull and press **B**.
+  Class picks the level: Interceptor → corvette (size 1), Cutter → corvette or prison barge (2), Frigate/Destroyer → station (3/4), Dreadnought → bridge (5).
+- **Levels:** tile grid, 4 m tiles; rooms chained left→right from the airlock; doors at room entrances; up to 3 doors on the main path are locked (bronze → silver → gold)
+  and each key lies in a region reachable without it. A flood-fill solver (keys picked up on the way) must reach the goal or the level is regenerated.
+- **Objectives:** Sabotage (set charges at the reactor, escape in 45 s), Capture bridge (clear the room, E at the console), Rescue 3 prisoners, Steal the data core, Kill Prefect Voss.
+  Finish → return to the airlock and press E. Leaving early (E in the airlock, or Esc) = *Fled*; dying ends the mission.
+- **Outcome in space:** win → +credits (15 per kill, +300 for an objective), +2 torpedoes/+3 missiles, boarded ship removed (captured or sabotaged); crew lost = damage taken / 25.
+- **Combat numbers:** blaster 15, scatter-gun 12×4, rattler 8 @10/s, Mjolnir 120 + 5 m splash, Valkyrie 150 piercing, axe 25; armour absorbs 30/60/80 % by amount held.
+  Monsters (hp): grunt 30, guard 100, gunner 175, medic 300 (revives corpses in 3 s), enforcer 240 (melee), mech 750, Voss 1500.

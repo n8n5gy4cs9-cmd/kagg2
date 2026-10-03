@@ -1,8 +1,8 @@
 {
   "name": "Kagga2",
   "tagline": "Mars Vikings vs. Earth Minions — bridge-sim space combat with first-person boarding actions",
-  "version": "0.7.0",
-  "status": "T01-T06 done (v0.7.0); next T07 weapons",
+  "version": "0.25.0",
+  "status": "T01-T24 done (v0.25.0, M0+M1+M2 complete); next T25 mission engine",
   "language": "Rust",
   "licence": "GPL-2.0-or-later (derived-from-GPL reference logic)",
   "platforms": ["macOS", "Linux", "Windows"],

@@ -1,15 +1,29 @@
 # HANDOFF
 
-## State (v0.7.0)
-- **T01–T06 done.** Foundation + first playable space flight:
-  - `src/texgen/` (+ `bin/texgen`): 116 generated PNGs in `assets/textures/` (+ `manifest.json`, `assets/contact_sheet.png`). Palette-ramp + Bayer-dither "pixel art" look. `font.rs` = shared 5×7 bitmap font.
-  - `src/meshgen/`: 38 headless low-poly models (ships, stations, planets/asteroids/ring, boarding people/mech/drone/props). `src/assets.rs` loads textures (regenerates them if the folder is missing; magenta checkerboard fallback).
-  - `src/sim/` (headless, no macroquad): `World` (generational ids), `Rng` (xoshiro), `Stepper` (60 Hz), `Command`/`Event`, `flight.rs` (throttle = target speed, flight assist, Newtonian mode), `sector.rs` (6 sectors: Mars Orbit, Phobos, Belt, Jupiter, Luna, Earth; orbits, asteroid fields, sky bodies).
-  - `src/gfx/`: `render3d.rs` (320×~270 pixel render target → post shader: bloom, 15-level Bayer dither, vignette; vertex-lit models; additive glows), `space_scene.rs` (input → Commands, camera, sky, effects), `hud.rs`, `cockpit.rs`, `pixfont.rs`, `viewer.rs`.
-- Verified: `cargo clippy --all-targets -- -D warnings` clean, `cargo test --release` 25 pass, `cargo fmt`, screenshots of all 6 sectors, viewer, cockpit + chase.
-- Flight keys: W/S throttle, A/D yaw, ↑/↓ pitch (↓ = nose up), Q/E roll, ←/→ strafe, R/F up/down, Space brake, X zero throttle, LShift full, M assist, C camera, T target, G clear, H help, B board (placeholder), F9 win (placeholder), Esc menu.
-- Dev flags: `cargo run --release -- --viewer [model]`, `--space <mars|phobos|belt|jupiter|luna|earth> [--chase] [--pos x,y,z] [--look x,y,z] [--throttle 0.8] [--target] --shot out.png [--frames 45]` (saves a screenshot and exits), env `KAGGA_FPS=1`.
-- **Next: T07** weapons (lances, torpedoes, missiles, projectiles, explosions — `explosion_sheet`, `beam_*`, `torpedo`, `missile` models/textures already exist).
+## State (v0.25.0)
+- **T01–T24 done = M0 foundation + M1 space + M2 boarding.** `./run.sh` launches (see its header: `fight`, `dock`, `board`, `tab N`, `sector NAME`, `viewer`, `test`, `shot`).
+- **Space sim** (headless, `src/sim/`): `ops.rs` (per-ship Ops + Faction), `combat.rs` (lance/torpedo/missile, damage by facing + shield frequency, destroy/debris/bounty),
+  `ai.rs` (Minion patrol/intercept/attack/flee/reinforce, wingmen + Orders), `crew.rs` (per-station AUTO), `systems.rs` (reactor budget, power/coolant, heat, repair),
+  `science.rs`, `nav.rs` (autopilot, warp, dock, mining, command router), `comms.rs`, `econ.rs`, `sector.rs` (`new_game`, encounters, `transfer` for warp).
+  Step order in `World::step`: controllers (AI, crew, autopilot) → apply commands → orbits → missile steering → movement/docked hold → projectile collision → upkeep → solid collisions.
+- **Boarding sim** (headless, `src/board/`): `level.rs` (tile grid, generator, key/lock solver), `pmove.rs` (Quake 2 pmove port + grid collision), `weapons.rs` (6 weapons, armour),
+  `monster.rs` (state machine, sight/hearing, medic), `world.rs` (`BoardWorld::step`: items, doors, alarm, objectives, rockets, outcome).
+- **Audio** `src/audio/synth.rs` (headless synth) + `gfx/sound.rs` (macroquad `audio` feature, enabled in Cargo.toml).
+- **GFX**: `space_scene.rs` (input → queued Commands, events → effects/sound, `boardable()` / `apply_boarding()`), `stations.rs` + `ui.rs` (F1–F7 panels → `Action`s),
+  `dock_ui.rs`, `board_scene.rs` (objective screen, FPS renderer with baked vertex light, HUD), `hud.rs`. `main.rs` owns the `BoardScene`, mouse grab, volume keys, forced end-of-mission events.
+- Verified this session: `cargo clippy --all-targets -- -D warnings` clean, `cargo test --release` 92 pass, `cargo fmt`; screenshots of Helm/Weapons/Engineering/Map/Dock/beam and a boarding level.
+  **Not verified (needs a human at the keyboard):** sound output, mouse clicks on panels, mouse-look feel/sensitivity in boarding (0.0028 rad/px), real-time balance of space and boarding combat.
+- Dev flags: `--space <sector> [--fight] [--fire] [--dock] [--tab N] [--chase] [--target]`, `--board [1-4] [--size 1-5]`, `--viewer [model]`, `--shot out.png [--frames N]`.
+
+## Known gaps / debt (one line each)
+- Dock screen mutates `Ops` directly via `econ` (multiplayer seam would need `Command::Buy…`). Warp gates not built (single system). Enemy squads respawn on re-entering a sector.
+- Minion stations (Concord forts, Geneva Dock) are inert targets — no turrets, not boardable.
+- No mission/win logic yet (T25): F9 still wins, space death → debrief(lost), boarding death → debrief(lost). Difficulty is `World::difficulty` / `BoardWorld::difficulty` (T28 will expose it).
+- Boarding: monsters path by BFS ignoring locks (they open unlocked doors only); no gibs/ragdoll; pickups are billboards; no flashlight; prisoners do not follow; level music/ambience not separate.
+- Map is a flat X/Z projection (no altitude).
+
+## Next
+- **T25** mission + story engine (`PLAN.md` M3). Wire `AppState::Briefing/Debrief` to real objectives; replace the F9 placeholder; route `SectorId::for_mission`.
 
 ## Resume
 1. Read `tasks.md` → first undone task → its section in `PLAN.md`.
@@ -17,9 +31,7 @@
 3. Run in `--release` (debug builds are slow for the CPU-lit meshes).
 
 ## Notes
-- Quake 2 reference has no art/maps; everything visual is generated.
-- Licence implication: GPL-2.0-or-later (see `CREDITS.md`).
-- Edition 2024 reserves `gen` (entity id field is `generation`); let-chains are used (clippy collapsible_if).
-- macroquad draw-call capacity is raised in `window_conf` (60k verts) — big meshes need it.
-- Textures have no wrap mode in safe macroquad, so mesh UVs stay inside 0..1 (quads pick a random sub-window of tileable textures).
-- Out-of-scope ideas noted: mouse flight, projectile/beam rendering (T07), crew-AI auto-throttle (T10).
+- Quake 2 reference has no art/maps; everything visual is generated. Licence: GPL-2.0-or-later (see `CREDITS.md`).
+- Edition 2024 reserves `gen`; let-chains are used (clippy collapsible_if). `is_multiple_of` is preferred over `% n == 0`.
+- macroquad draw-call capacity is raised in `window_conf` (60k verts). Mesh UVs stay inside 0..1 (no wrap mode), so level quads are one tile each.
+- Discrete commands wait in `SpaceScene::queue` until a fixed step runs (frames with 0 steps used to drop key presses).

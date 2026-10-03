@@ -5,7 +5,7 @@ bridge-sim space war (inspired by *Space Nerds In Space*), then storm disabled e
 bases in first-person boarding actions (inspired by *Quake 2*). Written in Rust. Single player
 first; multiplayer is an optional future goal.
 
-> Status: T01–T06 done (menu, generated art, meshes, sim core, flight, Sol sectors); building task by task — see [tasks.md](tasks.md).
+> Status: T01–T24 done (M0 foundation, M1 space: flight/combat/stations/nav/comms/starbases/audio, M2 boarding: Quake-2-style FPS actions); building task by task — see [tasks.md](tasks.md).
 
 ## Run
 ```sh
@@ -14,11 +14,14 @@ cargo run --bin texgen --release # regenerate all textures into assets/textures/
 cargo run --release -- --viewer  # model viewer (left/right = next model)
 cargo run --release -- --space mars   # jump straight into a sector
 cargo test --release
+./run.sh [fight|dock|board|tab N|sector NAME|viewer|test|shot]   # quick launcher, see header of run.sh
 ```
 
 Flight controls: **W/S** throttle, **A/D** yaw, **↑/↓** pitch, **Q/E** roll, **←/→** strafe,
 **R/F** up/down, **Space** brake, **X** zero throttle, **C** camera, **T** target, **M** flight
 assist, **H** help, **Esc** menu.
+Combat/stations: **Enter**/click lances, **Z** torpedo, **V** missile (lock with **T**), **[ ]** lance frequency,
+**, .** shield frequency, **F1–F7** station tabs, **Tab** crew AUTO, **N** scan, **P** autopilot, **L** dock, **K** mine, **-/=** volume.
 
 ## Docs
 | File | What |

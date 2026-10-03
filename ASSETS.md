@@ -100,7 +100,8 @@ interceptor, cutter, frigate, destroyer, dreadnought, prison barge, orbital fort
 missile, mining bot, escape pod, cargo crate; sphere (planets), asteroid (3 variants), ring;
 boarding: box-person (6 parts), mech, drone, door frame, console, crate, barrel, pickups.
 
-## Sounds (T17, synthesised)
+## Sounds (T17 ✅ — `src/audio/synth.rs`, rendered at startup, nothing on disk)
+Space set done (lance, torpedo, missile, explosion, shield hit, hull creak, alarm, dock clamp, beep, warp, scan + footstep/gunshot/door for boarding, 32 s music loop). Original plan:
 lance, torpedo, missile, explosion (S/L), shield hit, hull hit, alarm, warp charge/jump,
 dock clamp, UI click/confirm/deny, engine hum (loop), ambient drone (loop), music loop;
 boarding: footsteps, door, blaster, shotgun, rattler, rocket, rail, axe, pain, die, pickup,

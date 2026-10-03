@@ -11,14 +11,26 @@ Kagga2/
 │   ├── assets.rs              # texture registry + fallback + model lookup             [T03]
 │   ├── texgen/                # noise, image, space/ships/board/chars/ui recipes, font [T02]
 │   ├── meshgen/               # Builder + ships/bodies/board model catalogue           [T03]
-│   ├── sim/                   # HEADLESS — no macroquad                                [T04-T06]
-│   │   ├── world.rs           # generational entity arena, step(cmds) -> events, orbits, collisions
+│   ├── sim/                   # HEADLESS — no macroquad                                [T04-T16]
+│   │   ├── world.rs           # entity arena; step(): AI+crew+autopilot cmds -> apply -> move -> combat -> upkeep
 │   │   ├── rng.rs clock.rs command.rs event.rs
-│   │   ├── flight.rs          # ShipClass table, throttle/assist/Newtonian integrate
-│   │   └── sector.rs          # Sol sectors, sky bodies, new_game()
+│   │   ├── flight.rs          # ShipClass table (Viking + Minion classes), integrate (engine perf scales it)
+│   │   ├── sector.rs          # Sol sectors, encounters, new_game(), transfer() for warp
+│   │   ├── ops.rs             # per-ship Ops: hull/shields/ammo/systems/nav/scan/cargo/upgrades, Faction
+│   │   ├── combat.rs          # lances, torpedoes, missiles, damage (facing + frequency), destroy, upkeep  [T07/T08]
+│   │   ├── ai.rs              # Minion AI + wingmen, Order                                               [T09]
+│   │   ├── crew.rs            # crew-AI per station (AUTO toggles)                                       [T10]
+│   │   ├── systems.rs         # reactor budget, power/coolant, heat, health, repair teams                [T11/T12]
+│   │   ├── science.rs nav.rs  # scan/sweep/report; autopilot, warp, docking, mining, command router      [T13/T14/T16]
+│   │   ├── comms.rs econ.rs   # hail dialogs + taunts; prices, trade, services, shipyard                 [T15/T16]
+│   ├── board/                 # HEADLESS boarding actions: level.rs (generator) pmove.rs weapons.rs monster.rs world.rs  [T18-T24]
+│   ├── audio/                 # HEADLESS synth: SFX + music -> PCM/WAV                                   [T17]
 │   ├── gfx/                   # macroquad-only
 │   │   ├── render3d.rs        # pixel render target, post shader, lit models, billboards
-│   │   ├── space_scene.rs     # input -> Commands, camera, sky/world/effects draw
+│   │   ├── space_scene.rs     # input -> Commands (queued until a sim step runs), events -> effects/sound, draw
+│   │   ├── stations.rs ui.rs  # F1–F7 panels, immediate-mode widgets; panels emit Actions, never touch the world
+│   │   ├── board_scene.rs     # first-person renderer + objective screen + HUD; BoardInfo/BoardResult (T19/T24)
+│   │   ├── dock_ui.rs sound.rs # docked screen (mutates Ops via econ), playback Mixer
 │   │   ├── hud.rs cockpit.rs pixfont.rs viewer.rs screens.rs starfield.rs
 │   └── bin/texgen.rs          # writes assets/textures/*.png
 ├── assets/textures/*.png      # generated, committed (+ manifest.json, ../contact_sheet.png)

@@ -8,8 +8,10 @@ use std::f32::consts::TAU;
 
 use glam::Vec3;
 
+use super::ai::{self, Ai};
 use super::event::Event;
 use super::flight::{HAULER, LONGSHIP, SKIFF, ShipClass, ShipState};
+use super::ops::{Faction, Ops};
 use super::world::{Entity, EntityId, Kind, Orbit, World};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -52,6 +54,19 @@ impl SectorId {
             5 | 6 => SectorId::Jupiter,
             7 | 8 => SectorId::Luna,
             _ => SectorId::EarthOrbit,
+        }
+    }
+
+    /// Fuel needed to warp between two sectors (more for far-apart hosts).
+    pub fn warp_cost(self, to: SectorId) -> f32 {
+        if self == to {
+            return 0.0;
+        }
+        let (a, b) = (self.helio().0, to.helio().0);
+        if (a - b).abs() < 0.01 {
+            5.0
+        } else {
+            10.0 + (a - b).abs() * 8.0
         }
     }
 
@@ -235,6 +250,7 @@ fn ship(w: &mut World, label: &'static str, class: ShipClass, pos: Vec3, rot_y: 
     e.pos = pos;
     e.rot = glam::Quat::from_rotation_y(rot_y);
     e.ship = Some(ShipState::new(class));
+    e.ops = Some(Box::new(Ops::for_class(&class)));
     w.spawn(e)
 }
 
@@ -319,7 +335,6 @@ pub fn new_game(seed: u64, id: SectorId) -> World {
             orbit_to(&mut w, phobos, mars, 45.0);
             orbit_to(&mut w, deimos, mars, 35.0);
             for (label, class, off, ry) in [
-                ("Skiff Rask", SKIFF, Vec3::new(-260.0, 60.0, -300.0), 0.5),
                 ("Hauler Ymir", HAULER, Vec3::new(380.0, -90.0, 200.0), 2.0),
                 ("Hauler Skuld", HAULER, Vec3::new(600.0, 220.0, -500.0), 1.2),
             ] {
@@ -488,11 +503,136 @@ pub fn new_game(seed: u64, id: SectorId) -> World {
             }
         }
     }
+    let station_faction: [(&str, Faction); 8] = [
+        ("Forge", Faction::Mars),
+        ("Phobos Relay", Faction::Mars),
+        ("Belt Outpost", Faction::Mars),
+        ("Ganymede Port", Faction::Mars),
+        ("Tycho Fort", Faction::Neutral),
+        ("Concord Fort Alpha", Faction::Minion),
+        ("Concord Fort Beta", Faction::Minion),
+        ("Geneva Dock", Faction::Minion),
+    ];
+    let stations: Vec<EntityId> = w
+        .iter()
+        .filter(|(_, e)| e.kind == Kind::Station)
+        .map(|(i, _)| i)
+        .collect();
+    for s in stations {
+        if let Some(e) = w.get_mut(s) {
+            e.faction = station_faction
+                .iter()
+                .find(|(n, _)| *n == e.label)
+                .map_or(Faction::Neutral, |x| x.1);
+        }
+    }
     let spawn_pos = Vec3::ZERO;
     let player = ship(&mut w, "Huginn", LONGSHIP, spawn_pos, 0.0);
     w.player = Some(player);
+    if let Some(e) = w.get_mut(player) {
+        e.faction = Faction::Mars;
+        if let Some(o) = e.ops.as_deref_mut() {
+            o.cargo.credits = 500;
+            o.nav.dest = super::ops::Dest::None;
+        }
+    }
+    let rask = ship(
+        &mut w,
+        "Skiff Rask",
+        SKIFF,
+        Vec3::new(-220.0, 30.0, 140.0),
+        0.0,
+    );
+    if let Some(e) = w.get_mut(rask) {
+        e.faction = Faction::Mars;
+        e.ai = Some(Ai::wingman(0.9));
+        if let Some(o) = e.ops.as_deref_mut() {
+            o.sys.preset(2);
+        }
+    }
+    let squads: &[(Vec3, &[&str])] = match id {
+        SectorId::MarsOrbit => &[(
+            Vec3::new(2600.0, 300.0, -5200.0),
+            &["interceptor", "interceptor"],
+        )],
+        SectorId::Phobos => &[
+            (Vec3::new(-2500.0, 0.0, -6000.0), &["cutter", "interceptor"]),
+            (
+                Vec3::new(4000.0, 500.0, -2500.0),
+                &["interceptor", "interceptor"],
+            ),
+        ],
+        SectorId::Belt => &[
+            (
+                Vec3::new(-3000.0, 200.0, -3500.0),
+                &["cutter", "cutter", "interceptor"],
+            ),
+            (Vec3::new(3500.0, -300.0, -6000.0), &["frigate"]),
+        ],
+        SectorId::Jupiter => &[
+            (
+                Vec3::new(-4000.0, 0.0, -9000.0),
+                &["frigate", "cutter", "cutter"],
+            ),
+            (
+                Vec3::new(3000.0, 600.0, -3000.0),
+                &["interceptor", "interceptor", "cutter"],
+            ),
+        ],
+        SectorId::Luna => &[
+            (
+                Vec3::new(4000.0, 0.0, -4500.0),
+                &["frigate", "frigate", "cutter"],
+            ),
+            (Vec3::new(-3500.0, 400.0, -2500.0), &["destroyer"]),
+        ],
+        SectorId::EarthOrbit => &[
+            (
+                Vec3::new(-2000.0, 0.0, -7500.0),
+                &["dreadnought", "destroyer", "frigate"],
+            ),
+            (
+                Vec3::new(3500.0, 300.0, -3500.0),
+                &["cutter", "cutter", "interceptor", "interceptor"],
+            ),
+        ],
+    };
+    for (c, classes) in squads {
+        ai::spawn_squad(&mut w, *c, classes);
+    }
     w.push_event(Event::SectorLoaded(id));
     w
+}
+
+/// Carry the player's ship (hull, ammo, cargo, upgrades, crew settings) into a freshly built
+/// world for sector `to` — used by the warp drive.
+pub fn transfer(mut old: World, to: SectorId) -> World {
+    let seed = old.rng.next_u64();
+    let mut nw = new_game(seed, to);
+    nw.time = old.time;
+    nw.tick = old.tick;
+    nw.crew = old.crew.clone();
+    nw.difficulty = old.difficulty;
+    nw.reinforcements_left = old.reinforcements_left;
+    let carried = old
+        .player
+        .and_then(|p| old.get_mut(p))
+        .and_then(|e| e.ops.take());
+    if let (Some(mut ops), Some(p)) = (carried, nw.player) {
+        ops.nav.dest = super::ops::Dest::None;
+        ops.nav.route.clear();
+        ops.nav.autopilot = false;
+        ops.nav.warp = None;
+        ops.scan = Default::default();
+        ops.docked = None;
+        ops.mining = None;
+        ops.target = None;
+        ops.dead = false;
+        if let Some(e) = nw.get_mut(p) {
+            e.ops = Some(ops);
+        }
+    }
+    nw
 }
 
 #[cfg(test)]
@@ -507,6 +647,11 @@ mod tests {
             assert!(w.player.and_then(|p| w.get(p)).is_some(), "{id:?}");
             assert!(w.sky.iter().any(|s| s.kind == SkyKind::Star));
             assert!(w.iter().filter(|(_, e)| e.kind != Kind::Ship).count() >= 2);
+            assert!(
+                w.iter()
+                    .any(|(_, e)| e.faction == Faction::Minion && e.ai.is_some()),
+                "{id:?} has no enemies"
+            );
             assert!((w.sun_dir().length() - 1.0).abs() < 1e-4);
             for (_, e) in w.iter() {
                 assert!(e.pos.is_finite() && e.radius > 0.0);
@@ -591,6 +736,35 @@ mod tests {
         let (p, l) = (w.get(me).map(|e| e.pos), w.get(luna).map(|e| e.pos));
         let d = p.zip(l).map(|(a, b)| a.distance(b)).unwrap_or(0.0);
         assert!(hit && d >= 3400.0 + 22.0 - 1.0, "dist {d}");
+    }
+
+    #[test]
+    fn transfer_keeps_the_ship_and_resets_navigation() {
+        let mut w = new_game(1, SectorId::MarsOrbit);
+        let me = w.player.expect("player");
+        if let Some(o) = w.get_mut(me).and_then(|e| e.ops.as_deref_mut()) {
+            o.hull = 77.0;
+            o.cargo.credits = 1234;
+            o.torpedoes = 3;
+        }
+        let nw = transfer(w, SectorId::Jupiter);
+        assert_eq!(nw.sector, SectorId::Jupiter);
+        let o = nw
+            .player
+            .and_then(|p| nw.get(p))
+            .and_then(|e| e.ops.as_deref())
+            .expect("ops");
+        assert_eq!((o.hull, o.cargo.credits, o.torpedoes), (77.0, 1234, 3));
+    }
+
+    #[test]
+    fn warp_costs_grow_with_distance() {
+        assert!(
+            SectorId::MarsOrbit.warp_cost(SectorId::Jupiter)
+                > SectorId::MarsOrbit.warp_cost(SectorId::Belt)
+        );
+        assert!(SectorId::Luna.warp_cost(SectorId::EarthOrbit) < 10.0);
+        assert_eq!(SectorId::Luna.warp_cost(SectorId::Luna), 0.0);
     }
 
     #[test]

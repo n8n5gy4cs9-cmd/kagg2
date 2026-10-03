@@ -4,10 +4,13 @@ use std::f32::consts::TAU;
 
 use glam::{Quat, Vec3};
 
+use super::ai::Ai;
 use super::clock::DT;
 use super::command::{Addressed, Command};
+use super::crew::Crew;
 use super::event::Event;
 use super::flight::{self, ShipState};
+use super::ops::{Faction, Ops};
 use super::rng::Rng;
 use super::sector::{SectorId, SkyBody};
 
@@ -25,6 +28,26 @@ pub enum Kind {
     Moon,
     Asteroid,
     Station,
+    Projectile,
+    Debris,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ProjKind {
+    Torpedo,
+    Missile,
+    Debris,
+}
+
+/// Torpedo, missile or debris state.
+#[derive(Debug, Clone, Copy)]
+pub struct Proj {
+    pub kind: ProjKind,
+    pub owner: EntityId,
+    pub ttl: f32,
+    pub damage: f32,
+    pub target: Option<EntityId>,
+    pub freq: u8,
 }
 
 /// Circular orbit around another entity.
@@ -53,6 +76,10 @@ pub struct Entity {
     pub spin: f32,
     pub radius: f32,
     pub ship: Option<ShipState>,
+    pub faction: Faction,
+    pub ops: Option<Box<Ops>>,
+    pub ai: Option<Ai>,
+    pub proj: Option<Proj>,
     pub orbit: Option<Orbit>,
     /// Previous-step transform for render interpolation.
     pub prev_pos: Vec3,
@@ -79,6 +106,10 @@ impl Entity {
             spin: 0.0,
             radius,
             ship: None,
+            faction: Faction::Neutral,
+            ops: None,
+            ai: None,
+            proj: None,
             orbit: None,
             prev_pos: Vec3::ZERO,
             prev_rot: Quat::IDENTITY,
@@ -107,6 +138,11 @@ pub struct World {
     pub sector: SectorId,
     /// Distant scenery (sun, far planets) drawn at infinity.
     pub sky: Vec<SkyBody>,
+    /// Crew-AI settings for the player's ship.
+    pub crew: Crew,
+    /// Enemy accuracy/aggression scale (`1.0` normal).
+    pub difficulty: f32,
+    pub reinforcements_left: u8,
     events: Vec<Event>,
 }
 
@@ -121,6 +157,9 @@ impl World {
             player: None,
             sector: SectorId::MarsOrbit,
             sky: Vec::new(),
+            crew: Crew::default(),
+            difficulty: 1.0,
+            reinforcements_left: 2,
             events: Vec::new(),
         }
     }
@@ -234,18 +273,31 @@ impl World {
                 e.prev_rot = e.rot;
             }
         }
-        for a in cmds {
+        let mut all: Vec<Addressed> = cmds.to_vec();
+        all.extend(super::ai::think(self));
+        all.extend(super::crew::think(self));
+        all.extend(super::nav::autopilot(self));
+        for a in &all {
             if let Some(ship) = self.get_mut(a.ship).and_then(|e| e.ship.as_mut()) {
                 ship.apply(a.cmd);
             }
+            super::combat::handle(self, a.ship, a.cmd);
         }
         self.time += DT;
         self.tick += 1;
         self.step_orbits();
-        for slot in &mut self.slots {
+        super::combat::steer_projectiles(self);
+        let docked = super::nav::dock_positions(self);
+        for (i, slot) in self.slots.iter_mut().enumerate() {
             if let Some(e) = slot.ent.as_mut() {
                 if e.ship.is_some() {
-                    flight::integrate(e, DT);
+                    let held = docked.iter().find(|d| d.0 == i as u32);
+                    if let Some(&(_, pos, vel)) = held {
+                        e.pos = pos;
+                        e.vel = vel;
+                    } else {
+                        flight::integrate(e, DT);
+                    }
                 } else if e.orbit.is_none() {
                     e.pos += e.vel * DT;
                 }
@@ -254,6 +306,9 @@ impl World {
                 }
             }
         }
+        super::combat::collide_projectiles(self);
+        super::combat::upkeep(self);
+        super::nav::upkeep(self);
         self.resolve_collisions();
         self.drain_events()
     }
@@ -287,12 +342,12 @@ impl World {
     fn resolve_collisions(&mut self) {
         let ships: Vec<EntityId> = self
             .iter()
-            .filter(|(_, e)| e.ship.is_some())
+            .filter(|(_, e)| e.ship.is_some() && e.ops.as_ref().is_none_or(|o| o.docked.is_none()))
             .map(|(i, _)| i)
             .collect();
         let solids: Vec<(EntityId, Vec3, f32, Vec3)> = self
             .iter()
-            .filter(|(_, e)| e.ship.is_none())
+            .filter(|(_, e)| e.ship.is_none() && !matches!(e.kind, Kind::Projectile | Kind::Debris))
             .map(|(i, e)| (i, e.pos, e.radius, e.vel))
             .collect();
         for sid in ships {

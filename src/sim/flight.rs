@@ -68,6 +68,95 @@ pub const HAULER: ShipClass = ShipClass {
     turn_accel: 1.0,
 };
 
+macro_rules! class {
+    ($id:ident, $name:expr, $model:expr, $tex:expr, $r:expr, $v:expr, $a:expr, $s:expr, $p:expr, $y:expr, $ro:expr, $ta:expr) => {
+        pub const $id: ShipClass = ShipClass {
+            name: $name,
+            model: $model,
+            texture: $tex,
+            radius: $r,
+            max_speed: $v,
+            accel: $a,
+            strafe_speed: $s,
+            max_pitch: $p,
+            max_yaw: $y,
+            max_roll: $ro,
+            turn_accel: $ta,
+        };
+    };
+}
+
+class!(
+    INTERCEPTOR,
+    "Interceptor",
+    "interceptor",
+    "hull_minion_a",
+    12.0,
+    430.0,
+    170.0,
+    120.0,
+    1.5,
+    1.3,
+    2.4,
+    5.0
+);
+class!(
+    CUTTER,
+    "Cutter",
+    "cutter",
+    "hull_minion_a",
+    20.0,
+    340.0,
+    120.0,
+    80.0,
+    1.2,
+    1.0,
+    1.8,
+    4.0
+);
+class!(
+    FRIGATE,
+    "Frigate",
+    "frigate",
+    "hull_minion_b",
+    38.0,
+    230.0,
+    70.0,
+    45.0,
+    0.7,
+    0.6,
+    0.9,
+    2.2
+);
+class!(
+    DESTROYER,
+    "Destroyer",
+    "destroyer",
+    "hull_minion_a",
+    60.0,
+    200.0,
+    60.0,
+    35.0,
+    0.55,
+    0.5,
+    0.7,
+    1.8
+);
+class!(
+    DREADNOUGHT,
+    "Dreadnought",
+    "dreadnought",
+    "hull_minion_a",
+    115.0,
+    120.0,
+    30.0,
+    15.0,
+    0.3,
+    0.3,
+    0.3,
+    1.0
+);
+
 /// Dynamic flight state and pilot demands.
 #[derive(Debug, Clone, Copy)]
 pub struct ShipState {
@@ -78,6 +167,8 @@ pub struct ShipState {
     pub turn: Vec3,
     pub brake: bool,
     pub assist: bool,
+    /// Engine performance factor from power/damage (`systems`), `1.0` = nominal.
+    pub perf: f32,
 }
 
 impl ShipState {
@@ -89,6 +180,7 @@ impl ShipState {
             turn: Vec3::ZERO,
             brake: false,
             assist: true,
+            perf: 1.0,
         }
     }
 
@@ -102,6 +194,7 @@ impl ShipState {
             Command::Strafe { x, y } => self.strafe = (x.clamp(-1.0, 1.0), y.clamp(-1.0, 1.0)),
             Command::Brake(b) => self.brake = b,
             Command::SetAssist(a) => self.assist = a,
+            _ => {}
         }
     }
 }
@@ -119,7 +212,13 @@ fn approach(current: Vec3, target: Vec3, max_delta: f32) -> Vec3 {
 /// Advance one ship by `dt`.
 pub fn integrate(e: &mut Entity, dt: f32) {
     let Some(s) = e.ship else { return };
-    let c = s.class;
+    let mut c = s.class;
+    // Engine power/damage scales speed and acceleration (turning keeps 60 % authority).
+    let perf = s.perf.clamp(0.0, 1.6);
+    c.max_speed *= perf.max(0.05);
+    c.accel *= perf.max(0.05);
+    c.strafe_speed *= perf.max(0.05);
+    c.turn_accel *= 0.6 + 0.4 * perf.min(1.0);
 
     // Rotation: body-frame rates chase the demand (pitch about X, yaw about Y, roll about Z).
     // Pitch up and yaw left are positive demands, so signs map to right-handed axes.
