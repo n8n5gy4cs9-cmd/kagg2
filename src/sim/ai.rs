@@ -382,16 +382,21 @@ fn reinforce(w: &mut World, caller: EntityId) {
     )));
 }
 
+/// Minion ship class by lowercase name (unknown names give a dreadnought).
+pub fn class_of(name: &str) -> super::flight::ShipClass {
+    match name {
+        "interceptor" => INTERCEPTOR,
+        "cutter" => CUTTER,
+        "frigate" => FRIGATE,
+        "destroyer" => DESTROYER,
+        _ => DREADNOUGHT,
+    }
+}
+
 /// Spawn a standard encounter group (`n` ships mixing classes) around `center`.
 pub fn spawn_squad(w: &mut World, center: Vec3, classes: &[&str]) {
     for (i, c) in classes.iter().enumerate() {
-        let class = match *c {
-            "interceptor" => INTERCEPTOR,
-            "cutter" => CUTTER,
-            "frigate" => FRIGATE,
-            "destroyer" => DESTROYER,
-            _ => DREADNOUGHT,
-        };
+        let class = class_of(c);
         let a = i as f32 * 2.1;
         let pos = center + Vec3::new(a.cos() * 220.0, (i as f32 - 1.0) * 40.0, a.sin() * 220.0);
         spawn_minion(w, class, pos, Mode::Patrol);

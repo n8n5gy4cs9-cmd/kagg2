@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Player guide — Kagg2</title><meta name="description" content="Kagg2: Mars Vikings against the Earth Minions. A bridge-simulator and boarding-FPS campaign.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%237ff0cf' d='M16 2l5 9h-4v5l6-4v5l-6 4v9h-2v-9l-6-4v-5l6 4v-5h-4z'/%3E%3C/svg%3E">
+<style>@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Pixelify+Sans:wght@400;600&display=swap');
+:root{--bg:#070b1e;--bg2:#0b1430;--panel:#0d1730;--ink:#eaf2f6;--mint:#3df2b0;--gold:#ffcf5a;--ice:#5fe0ff;--muted:#9aaac0;--line:#2a3f66;--code:#08102a;--link:#7be8ff}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:90px}
+body{margin:0;background:radial-gradient(ellipse at 50% -10%,#16286055,transparent 60%),var(--bg);color:var(--ink);font:16px/1.7 'Space Grotesk',system-ui,Arial,sans-serif}
+a{color:inherit;text-decoration:none}button{font:inherit;cursor:pointer}
+header{height:84px;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:0 5.5%;background:#060a1cf2;border-bottom:3px solid #1b2c58;box-shadow:0 3px 0 #0003;position:sticky;top:0;z-index:20;backdrop-filter:blur(8px)}
+.brand{font-family:'Pixelify Sans','Space Grotesk',sans-serif;font-size:22px;font-weight:700;letter-spacing:3px;display:flex;align-items:center;gap:12px;white-space:nowrap;color:var(--gold);text-shadow:2px 2px 0 #04081a}
+.rune{font-size:32px;color:var(--ice);line-height:1}
+nav{font-family:'Pixelify Sans','Space Grotesk',sans-serif;display:flex;flex-wrap:wrap;gap:4px 18px;font-size:14px;color:#b5c3dc}
+nav a{padding:4px 0;border-bottom:3px solid transparent}nav a:hover{color:var(--gold)}nav a.on{color:var(--gold);border-color:var(--gold)}
+.nav-cta,.button{font-family:'Pixelify Sans',sans-serif;background:linear-gradient(#ffd96e,#e9a93a);color:#2a1706;border:0;box-shadow:0 4px 0 #8a5a16,0 0 0 3px #2a1706,0 0 0 5px #ffcf5a60;letter-spacing:.5px;padding:11px 18px;font-size:14px;display:inline-flex;gap:18px;white-space:nowrap}
+.nav-cta span,.button span{color:#7a4a10}.button:hover,.nav-cta:hover{transform:translateY(-2px);filter:brightness(1.08)}
+.hero{position:relative;overflow:hidden;padding:90px 6% 80px;text-align:center;background:radial-gradient(ellipse 60% 70% at 50% 30%,#1c3a7a66,transparent 70%),#050a1c;border-bottom:3px solid #1b2c58}
+.hero:before{content:"";position:absolute;inset:0;background-image:radial-gradient(#fff 1px,transparent 1px),radial-gradient(#9ec9ff 1px,transparent 1px);background-size:90px 90px,140px 140px;background-position:0 0,40px 60px;opacity:.25}
+.hero>*{position:relative}
+.eyebrow{font-family:'Pixelify Sans',sans-serif;font-size:12px;letter-spacing:2px;color:var(--ice);display:flex;align-items:center;justify-content:center;gap:10px;text-transform:uppercase}
+.eyebrow span{width:5px;height:5px;background:var(--gold)}
+.hero h1{font-family:'Pixelify Sans',sans-serif;font-size:clamp(60px,9vw,120px);font-weight:600;line-height:.95;letter-spacing:2px;margin:22px 0 18px;color:var(--gold);text-shadow:4px 5px 0 #04081a}
+.hero p{max-width:640px;margin:0 auto 22px;color:#d3def0;font-size:16px}
+.actions{display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin-top:26px}
+.section{max-width:1240px;margin:auto;padding:70px 40px}
+h2{font-family:'Pixelify Sans',sans-serif;font-weight:400;font-size:38px;line-height:1.15;margin:15px 0 0}
+h3{font-family:'Pixelify Sans',sans-serif;font-weight:400;font-size:24px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;margin-top:30px}
+.cards a{border:3px solid #2a3f66;background:var(--panel);box-shadow:inset 0 0 0 2px #0a1330,5px 5px 0 #04081a;padding:22px;display:block;transition:transform .2s,filter .2s}
+.cards a:hover{transform:translateY(-3px);filter:brightness(1.15)}.cards b{display:block;font-family:'Pixelify Sans',sans-serif;font-size:20px;color:var(--gold);font-weight:400;margin:8px 0}.cards small{color:var(--muted);font-size:13px;line-height:1.6;display:block}
+.feature-num{font-size:11px;letter-spacing:1.5px;color:var(--gold)}
+.wrap{max-width:min(96vw,1900px);margin:0 auto;padding:36px 24px;display:grid;grid-template-columns:260px 1fr;gap:40px}
+aside{position:sticky;top:104px;align-self:start;max-height:calc(100vh - 124px);overflow:auto;font-size:13px;border:3px solid #2a3f66;background:#08112b;box-shadow:inset 0 0 0 2px #0a1330;padding:8px 10px}
+aside a{display:block;color:var(--muted);padding:3px 0 3px 12px;border-left:2px solid #2a3f66}aside a:hover,aside a.cur{color:var(--gold);border-color:var(--gold)}aside a.l3{padding-left:26px;font-size:12px}
+aside .grp{font-family:'Pixelify Sans',sans-serif;margin:12px 0 4px;padding:3px 8px;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#1a1004;background:linear-gradient(#ffd96e,#e9a93a);box-shadow:0 2px 0 #8a5a16}
+main{min-width:0;max-width:1100px}
+main h1{font-family:'Pixelify Sans',sans-serif;font-size:3.4rem;font-weight:400;line-height:1;margin:.1em 0 .3em;color:var(--gold);text-shadow:3px 3px 0 #04081a}
+main h1::after{content:"";display:block;width:70px;height:3px;background:var(--mint);margin-top:14px}
+main h2{margin-top:2.2em;padding-bottom:.25em;border-bottom:1px solid var(--line);font-size:1.7rem}main h3{margin-top:1.6em;font-size:1.25rem;color:var(--ice)}
+h2 .a,h3 .a{opacity:0;margin-left:.4em;color:var(--muted)}h2:hover .a,h3:hover .a{opacity:1}
+main a{color:var(--link);border-bottom:1px solid #7ff0cf40}main a:hover{border-color:var(--mint)}
+code{background:var(--code);padding:.12em .4em;border-radius:4px;font:13.5px ui-monospace,Menlo,Consolas,monospace;color:#a8f6ff}
+kbd{display:inline-block;min-width:1.6em;text-align:center;padding:.05em .45em;border:1px solid #5a6fa0;border-bottom-width:3px;border-radius:5px;background:#101e44;color:var(--gold);font:600 13px ui-monospace,Menlo,monospace}
+pre{background:var(--code);padding:14px 16px;border-radius:6px;overflow:auto;border:2px solid #2a3f66}pre code{padding:0;background:none}
+table{border-collapse:separate;border-spacing:0;display:block;overflow-x:auto;max-width:100%;margin:1.2em 0;border:2px solid #2a3f66}
+th,td{border-bottom:1px solid #1d3236;padding:8px 12px;text-align:left;vertical-align:top}tr:last-child td{border-bottom:0}
+th{font-family:'Pixelify Sans',sans-serif;background:#101e44;font-size:.9rem;letter-spacing:.06em;color:var(--gold);font-weight:400}tbody tr:nth-child(even){background:#0b1534}
+blockquote{margin:1.2em 0;padding:.9em 1.4em;border:3px solid #2a3f66;border-left:6px solid var(--gold);background:var(--panel);color:#c9d6ea}
+blockquote.tip{border-left-color:var(--mint)}blockquote.warn{border-left-color:#ff7b6b}blockquote.note{border-left-color:#7aa8ff}
+details.guide{border:3px solid #2a3f66;background:var(--panel);padding:10px 16px;margin:14px 0}details.guide>summary{cursor:pointer;font-weight:700;color:var(--mint)}
+.badge{display:inline-block;padding:.1em .6em;background:var(--mint);color:#0c2725;font-size:12px;font-weight:700}
+footer{padding:30px 5.5%;border-top:3px solid #1b2c58;background:#060a1c;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+footer .brand{font-size:17px}footer>span,footer small{font-size:10px;letter-spacing:1px;color:#7a8c9c}
+:focus-visible{outline:2px solid var(--mint);outline-offset:5px}
+@media(max-width:860px){header{height:auto;padding:12px 6%;flex-wrap:wrap}nav{order:3;width:100%}.nav-cta{display:none}.section{padding:50px 6%}.wrap{grid-template-columns:1fr}aside{display:none}main h1{font-size:2.6rem}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+</style></head><body><header><a class="brand" href="index.html"><span class="rune">ᛟ</span> KAGG2</a><nav aria-label="Main navigation"><a href="index.html">Home</a><a href="guide.html" class=on>Player guide</a><a href="manual.html">Manual</a><a href="developer-guide.html">Developer guide</a><a href="ai-guide.html">AI helper guide</a></nav><a class="nav-cta" href="guide.html">Start playing <span>ᚠ</span></a></header><div class="wrap"><aside><div class="grp">On this page</div><a class="l2" href="#getting-started">Getting started</a><a class="l2" href="#your-first-flight">Your first flight</a><a class="l2" href="#the-campaign">The campaign</a><a class="l2" href="#fighting-in-space">Fighting in space</a><a class="l2" href="#boarding">Boarding</a><a class="l2" href="#starbases-and-trade">Starbases and trade</a><a class="l2" href="#endings">Endings</a><a class="l2" href="#difficulty">Difficulty</a><a class="l2" href="#tips">Tips</a></aside><main><h1>Player guide</h1>
+<h2 id="getting-started">Getting started<a class="a" href="#getting-started">#</a></h2>
+<p>Kagg2 is a ship-bridge simulator with a first-person boarding game inside it. You fly a Marsgard longship, run its stations (or let your crew do it), cripple Concord warships and storm them. Ten missions take you from Mars to Earth.</p>
+<ol>
+<li><strong>Run it.</strong> In the project folder run <code>./run.sh</code>. It builds in release mode and starts the game. On an Apple-silicon Mac it is built for <code>apple-m1</code> by default (<code>.cargo/config.toml</code>).</li>
+<li><strong>Main menu.</strong> <em>New Game</em> starts mission 1. <em>Continue</em> appears once you have won a mission. <em>Settings</em> has difficulty, volume, mouse and key bindings. <em>Help</em> shows every key.</li>
+<li><strong>Read the briefing</strong> and press <kbd>Enter</kbd> to launch. <kbd>Esc</kbd> returns to the menu.</li>
+<li><strong>Follow the objective line</strong> at the top of the screen. Mission 1 is a tutorial: it asks for one thing at a time.</li>
+<li><strong>Win</strong> by finishing every stage; you then see a debrief with a saga verse. <strong>Lose</strong> if your ship is destroyed, a protected ship dies or a timer runs out; the debrief says why and you retry the mission.</li>
+</ol>
+<blockquote class="tip"><strong>Tip:</strong> press <kbd>F8</kbd> in space for help on the open station tab. The same texts are in the menu under Help.</blockquote>
+<h2 id="your-first-flight">Your first flight<a class="a" href="#your-first-flight">#</a></h2>
+<table><thead><tr><th>Do</th><th>Keys</th></tr></thead><tbody>
+<tr><td>Throttle up / down</td><td><kbd>W</kbd> / <kbd>S</kbd>; <kbd>Shift</kbd> full, <kbd>X</kbd> zero</td></tr>
+<tr><td>Turn</td><td><kbd>A</kbd>/<kbd>D</kbd> yaw, arrows up/down pitch, <kbd>Q</kbd>/<kbd>E</kbd> roll</td></tr>
+<tr><td>Brake</td><td><kbd>Space</kbd></td></tr>
+<tr><td>Target, fire</td><td><kbd>T</kbd> next target, <kbd>Enter</kbd> or click for lances, <kbd>Z</kbd> torpedo, <kbd>V</kbd> missile</td></tr>
+<tr><td>Dock</td><td>target a station (<kbd>T</kbd>), then <kbd>L</kbd>; <kbd>L</kbd> again to undock</td></tr>
+</tbody></table>
+<p>Switch stations with <kbd>F1</kbd>–<kbd>F7</kbd>. <kbd>Tab</kbd> gives the open station to your crew (AUTO) and takes it back.</p>
+<h2 id="the-campaign">The campaign<a class="a" href="#the-campaign">#</a></h2>
+<table><thead><tr><th>#</th><th>Mission</th><th>Place</th><th>What you do</th></tr></thead><tbody>
+<tr><td>1</td><td>First Raven</td><td>Mars Orbit</td><td>Tutorial: throttle, fly to the Forge, target and shoot 3 drones, dock, then kill two Concord scouts.</td></tr>
+<tr><td>2</td><td>Phobos Watch</td><td>Phobos</td><td>Fly to the relay and beat two raider waves. Use Engineering power presets.</td></tr>
+<tr><td>3</td><td>Iron Tithe</td><td>Belt</td><td>Mine 6 ore (<kbd>K</kbd>), scan 2 contacts (<kbd>N</kbd>), escort two haulers to Belt Outpost through an ambush. Losing a hauler fails the mission.</td></tr>
+<tr><td>4</td><td>Boarding Party</td><td>Belt</td><td>Cripple the Courier without destroying it, then board it (<kbd>B</kbd>) and steal the data core.</td></tr>
+<tr><td>5</td><td>The Silent Moon</td><td>Deimos</td><td>Wait in Deimos' shadow, kill the convoy escorts, cripple the Prison Barge, board it and free the prisoners.</td></tr>
+<tr><td>6</td><td>Jovian Toll</td><td>Ganymede</td><td>Dock at Ganymede Port, buy a shipyard upgrade, break the toll squad.</td></tr>
+<tr><td>7</td><td>Wolves of the Belt</td><td>Belt</td><td>Two extra skiffs join you. Order them in Comms (F6); beat a patrol, then a destroyer.</td></tr>
+<tr><td>8</td><td>Gate of Frost</td><td>Luna</td><td>Destroy three shield generators in 7 minutes, cripple Frost Command, board it and sabotage the reactor.</td></tr>
+<tr><td>9</td><td>Luna Siege</td><td>Luna</td><td>Break the fortress ring, cripple the dreadnought Bulwark, board it and sabotage her reactor.</td></tr>
+<tr><td>10</td><td>Ragnarök Over Earth</td><td>Earth Orbit</td><td>Break the screen, cripple Aegis Prime, board it and kill Prefect Voss. Then choose an ending.</td></tr>
+</tbody></table>
+<p>Credits and shipyard upgrades carry from mission to mission. Hull, shields and ammunition are refitted at the start of each mission.</p>
+<h2 id="fighting-in-space">Fighting in space<a class="a" href="#fighting-in-space">#</a></h2>
+<ul>
+<li><strong>Shields have four facings</strong> (fore, aft, port, starboard). Turn your strongest side to the enemy, and keep circling: a facing that is down stays down for a while.</li>
+<li><strong>Frequency matters.</strong> Scan an enemy (<kbd>N</kbd>, hold) to learn its shield frequency; set your lances to match it with <kbd>[</kbd> <kbd>]</kbd> for more damage. Change your own shield frequency with <kbd>,</kbd> <kbd>.</kbd>.</li>
+<li><strong>Heat.</strong> Lances heat up. Fire in bursts. Engineering coolant sliders cool systems; an overheated system burns out.</li>
+<li><strong>Power.</strong> The reactor budget is fixed. Presets on <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> in Engineering: balanced, weapons, shields.</li>
+<li><strong>Missiles</strong> need a lock (target first). <strong>Torpedoes</strong> are slow and heavy; best against open hulls.</li>
+<li><strong>Wingmen</strong> (green) follow orders from Comms. Hail ships with <kbd>H</kbd>; you can demand a weak ship's surrender.</li>
+</ul>
+<h2 id="boarding">Boarding<a class="a" href="#boarding">#</a></h2>
+<p>A hostile ship can be boarded when it is <em>disabled</em> or <em>crippled</em> (hull below 60 % and shields almost gone) and you are within about 450 units. Target it and press <kbd>B</kbd>. In campaign missions that demand it, the objective is chosen for you; otherwise you choose.</p>
+<table><thead><tr><th>Objective</th><th>Do</th></tr></thead><tbody>
+<tr><td>Sabotage the reactor</td><td>Reach the reactor, set the charges, escape to the airlock within 45 seconds.</td></tr>
+<tr><td>Capture the bridge</td><td>Clear the bridge and use the console.</td></tr>
+<tr><td>Rescue prisoners</td><td>Open the cells and free all three prisoners.</td></tr>
+<tr><td>Steal the data core</td><td>Take the core from its room.</td></tr>
+<tr><td>Kill Prefect Voss</td><td>Boss fight on the dreadnought bridge.</td></tr>
+</tbody></table>
+<p>Move with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>, look with the mouse, fire with click or <kbd>Enter</kbd>, change weapons with <kbd>1</kbd>–<kbd>6</kbd>, use things with <kbd>E</kbd>. Keys (bronze, silver, gold) open matching locked doors and always lie somewhere you can reach. When the objective is done, walk back to the airlock and press <kbd>E</kbd>. Dying ends the mission; <kbd>Esc</kbd> aborts and returns you to your ship.</p>
+<blockquote class="warn"><strong>Careful:</strong> destroy a ship you need to board (the Courier, the Prison Barge, Frost Command, the Bulwark, Aegis Prime) and the mission fails. Aim for the shields first and ease off once its hull is under 60 %.</blockquote>
+<h2 id="starbases-and-trade">Starbases and trade<a class="a" href="#starbases-and-trade">#</a></h2>
+<p>Dock at a friendly station to repair, rearm and refuel (the Forge is half price), buy upgrades and trade 12 commodities. Upgrades (to level 3): Rune Lances +30 % damage, Shield Generator +30 %, Reactor Core +20 % power, Hull Plating +25 %, Ordnance Bays +2 torpedoes and missiles per level. The mining bot (<kbd>K</kbd> on a targeted asteroid) fills your hold with ore.</p>
+<h2 id="endings">Endings<a class="a" href="#endings">#</a></h2>
+<p>After Prefect Voss falls you choose: <strong>1 Break the Armada</strong> (destroy the codes; an uneasy peace between equals) or <strong>2 Take the Throne</strong> (use the codes; Mars rules). The choice is an epilogue and is saved.</p>
+<h2 id="difficulty">Difficulty<a class="a" href="#difficulty">#</a></h2>
+<p>Settings → Difficulty: <strong>Thrall</strong> (easy, enemies 0.7×), <strong>Karl</strong> (normal), <strong>Jarl</strong> (hard, 1.4×). It scales enemy aim and aggression in space and the damage monsters deal when boarding. You can change it between missions.</p>
+<h2 id="tips">Tips<a class="a" href="#tips">#</a></h2>
+<ul><li>Cripple, do not kill: boarded ships give credits, ammunition and objective progress.</li><li>Dock between waves to rearm; docking also pauses the danger.</li><li>Let the crew run Damage Control and Science (AUTO) while you fly and shoot.</li><li>Mouse feel in boarding is a setting: lower the sensitivity if you overshoot.</li><li>If a key clashes with something, Settings marks both rows red.</li></ul>
+</main></div><script>
+const links=[...document.querySelectorAll('aside a')];const heads=links.map(a=>document.getElementById(a.getAttribute('href').slice(1)));
+const onScroll=()=>{let cur=0,best=-1e9;heads.forEach((h,i)=>{if(!h)return;const t=h.getBoundingClientRect().top;if(t<130&&t>best){best=t;cur=i}});links.forEach((a,i)=>a.classList.toggle('cur',i===cur))};
+addEventListener('scroll',onScroll,{passive:true});onScroll();
+</script><footer><a class="brand" href="index.html"><span class="rune">ᛟ</span> KAGG2</a><span>MARS VIKINGS AGAINST THE EARTH MINIONS</span><small>v0.30.0 · generated by tools/make_html.py: edit tools/html_src/*.html, not this file</small></footer></body></html>

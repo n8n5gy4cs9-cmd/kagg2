@@ -1,4 +1,4 @@
-# Kagga2 — Tasks
+# Kagg2 — Tasks
 
 Only two lists: **Done** and **Undone**. When a task is finished, move its line to Done (same ID).
 Details/acceptance for every task: `PLAN.md`. Do tasks in order unless told otherwise.
@@ -30,6 +30,12 @@ Details/acceptance for every task: `PLAN.md`. Do tasks in order unless told othe
 - [x] **T23** Level logic: doors + key locks, alarm, objectives (sabotage, capture, rescue, steal, boss), airlock exit _(v0.24.0)_
 - [x] **T24** Space ↔ boarding transition: B on a crippled/disabled hostile → objective choice → boarding → loot/capture/casualties _(v0.25.0)_
 
+- [x] **T25** Mission + story engine: staged goals (reach/dock/scan/mine/clear/cripple/board/escort), timed beats (dialogue + spawns), protect + time-limit failures, captions on the HUD _(v0.30.0)_
+- [x] **T26** Campaign missions 1–5 (First Raven tutorial, Phobos Watch, Iron Tithe, Boarding Party, The Silent Moon) _(v0.30.0)_
+- [x] **T27** Campaign missions 6–10 (Jovian Toll, Wolves of the Belt, Gate of Frost, Luna Siege, Ragnarök Over Earth), bosses, two endings _(v0.30.0)_
+- [x] **T28** Save/load (`~/.kagg2`), settings screen: difficulty Thrall/Karl/Jarl, volume, music, mouse sensitivity, invert-Y, 26 rebindable flight keys _(v0.30.0)_
+- [x] **T29** Tutorial (mission 1 objectives) + help: F8 station overlay, boarding controls card, main-menu Help screen _(v0.30.0)_
+
 ## ⬜ Undone
 
 ### M0 — Foundation
@@ -42,11 +48,7 @@ _(all done)_
 _(all done)_
 
 ### M3 — Campaign
-- [ ] **T25** Mission + story engine (objectives, triggers, briefings, saga dialogue)
-- [ ] **T26** Campaign missions 1–5
-- [ ] **T27** Campaign missions 6–10, bosses, ending
-- [ ] **T28** Save/load, settings, difficulty, key bindings
-- [ ] **T29** Tutorial + in-game help screens
+_(all done)_
 
 ### M4 — Polish
 - [ ] **T30** Balance pass + headless bot playtest harness

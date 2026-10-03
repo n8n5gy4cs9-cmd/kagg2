@@ -249,4 +249,9 @@ impl Ops {
     pub fn shield_total(&self) -> f32 {
         self.shields.iter().sum()
     }
+
+    /// Hull below 60 % with the shields nearly gone: the ship can be clamped on to and boarded.
+    pub fn crippled(&self) -> bool {
+        self.hull < self.max_hull * 0.6 && self.shield_total() < self.max_shield * 4.0 * 0.15
+    }
 }

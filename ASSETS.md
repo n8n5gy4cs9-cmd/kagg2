@@ -1,4 +1,4 @@
-# Kagga2 — Assets (all generated)
+# Kagg2 — Assets (all generated)
 
 Nothing is copied from the references. Textures: `cargo run --bin texgen` (T02) → `assets/textures/`.
 Meshes: built in code (T03). Sounds: synthesised at start-up (T17).

@@ -1,7 +1,7 @@
 # HANDOFF
 
-## State (v0.25.0)
-- **T01–T24 done = M0 foundation + M1 space + M2 boarding.** `./run.sh` launches (see its header: `fight`, `dock`, `board`, `tab N`, `sector NAME`, `viewer`, `test`, `shot`).
+## State (v0.30.0)
+- **T01–T29 done = M0–M3 (campaign).** T25–T29 added in v0.30.0 (see `GAME_DESIGN.md` §9). `./run.sh` launches (see its header: `fight`, `dock`, `board`, `tab N`, `sector NAME`, `viewer`, `test`, `shot`).
 - **Space sim** (headless, `src/sim/`): `ops.rs` (per-ship Ops + Faction), `combat.rs` (lance/torpedo/missile, damage by facing + shield frequency, destroy/debris/bounty),
   `ai.rs` (Minion patrol/intercept/attack/flee/reinforce, wingmen + Orders), `crew.rs` (per-station AUTO), `systems.rs` (reactor budget, power/coolant, heat, repair),
   `science.rs`, `nav.rs` (autopilot, warp, dock, mining, command router), `comms.rs`, `econ.rs`, `sector.rs` (`new_game`, encounters, `transfer` for warp).
@@ -15,15 +15,20 @@
   **Not verified (needs a human at the keyboard):** sound output, mouse clicks on panels, mouse-look feel/sensitivity in boarding (0.0028 rad/px), real-time balance of space and boarding combat.
 - Dev flags: `--space <sector> [--fight] [--fire] [--dock] [--tab N] [--chase] [--target]`, `--board [1-4] [--size 1-5]`, `--viewer [model]`, `--shot out.png [--frames N]`.
 
+## Session v0.30.0 (T25-T29)
+- New: `sim/mission.rs`, `story.rs` (briefings, verses, endings), `save.rs`, `gfx/keys.rs`, `gfx/help.rs`, `gfx/settings_ui.rs`; AppState gained Settings/Help/Ending; `run.sh` fixed (`default-run`, `.cargo/config.toml` targets apple-m1).
+- Verified: clippy clean, `cargo test --release` 111 pass, launch screenshot. **Not verified by a human:** mission flow end-to-end, settings screen mouse/keys, key rebinding in play, HUD caption layout, boarding-forced objectives.
+- HTML docs: `HTML/` (manual, player guide, developer guide, AI guide) built by `python3 tools/make_html.py`.
+
 ## Known gaps / debt (one line each)
 - Dock screen mutates `Ops` directly via `econ` (multiplayer seam would need `Command::Buy…`). Warp gates not built (single system). Enemy squads respawn on re-entering a sector.
 - Minion stations (Concord forts, Geneva Dock) are inert targets — no turrets, not boardable.
-- No mission/win logic yet (T25): F9 still wins, space death → debrief(lost), boarding death → debrief(lost). Difficulty is `World::difficulty` / `BoardWorld::difficulty` (T28 will expose it).
+- Missions use stock sectors; warp gates are not built (mission 6 is a plain blockade fight). Mission balance is untested by a human: T30 bot should check solvability and tune `sim/mission.rs` numbers.
 - Boarding: monsters path by BFS ignoring locks (they open unlocked doors only); no gibs/ragdoll; pickups are billboards; no flashlight; prisoners do not follow; level music/ambience not separate.
 - Map is a flat X/Z projection (no altitude).
 
 ## Next
-- **T25** mission + story engine (`PLAN.md` M3). Wire `AppState::Briefing/Debrief` to real objectives; replace the F9 placeholder; route `SectorId::for_mission`.
+- **T30** balance pass + headless bot playtest harness (`PLAN.md` M4). Play missions 1–10 by hand first: the spawn offsets, time limit of mission 8 (420 s) and wave sizes are guesses.
 
 ## Resume
 1. Read `tasks.md` → first undone task → its section in `PLAN.md`.

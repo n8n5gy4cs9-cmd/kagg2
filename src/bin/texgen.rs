@@ -7,7 +7,7 @@ fn main() -> ExitCode {
     let dir = std::env::args()
         .nth(1)
         .map_or_else(|| PathBuf::from("assets/textures"), PathBuf::from);
-    match kagga2::texgen::write_all(&dir) {
+    match kagg2::texgen::write_all(&dir) {
         Ok(rows) => {
             println!("{:<24} {:>9}  mean rgb", "name", "size");
             for r in &rows {

@@ -1,22 +1,27 @@
 use macroquad::prelude::*;
 
-use kagga2::app::{AppEvent, AppState, Menu, menu_event};
-use kagga2::assets::Assets;
-use kagga2::gfx::board_scene::BoardScene;
-use kagga2::gfx::render3d::Renderer;
-use kagga2::gfx::sound::Mixer;
-use kagga2::gfx::space_scene::SpaceScene;
-use kagga2::gfx::starfield::Starfield;
-use kagga2::gfx::viewer::Viewer;
-use kagga2::gfx::{pixfont, screens};
-use kagga2::sim::SectorId;
+use kagg2::app::{AppEvent, AppState, Menu, MenuAction, menu_event};
+use kagg2::assets::Assets;
+use kagg2::gfx::board_scene::BoardScene;
+use kagg2::gfx::keys::Bind;
+use kagg2::gfx::render3d::Renderer;
+use kagg2::gfx::settings_ui::SettingsUi;
+use kagg2::gfx::sound::Mixer;
+use kagg2::gfx::space_scene::SpaceScene;
+use kagg2::gfx::starfield::Starfield;
+use kagg2::gfx::viewer::Viewer;
+use kagg2::gfx::{pixfont, screens};
+use kagg2::save::{self, SaveGame, Settings};
+use kagg2::sim::SectorId;
+use kagg2::sim::mission::Carry;
+use kagg2::story::Ending;
 
 const BOOT_SECONDS: f64 = 1.2;
 
 fn window_conf() -> macroquad::conf::Conf {
     macroquad::conf::Conf {
         miniquad_conf: Conf {
-            window_title: "Kagga2".to_owned(),
+            window_title: "Kagg2".to_owned(),
             window_width: 1280,
             window_height: 720,
             window_resizable: true,
@@ -30,7 +35,20 @@ fn window_conf() -> macroquad::conf::Conf {
 }
 
 /// Read the keyboard for the current state and return the resulting event, if any.
-fn state_input(state: AppState, menu: &mut Menu, boot_started: f64) -> Option<AppEvent> {
+fn state_input(
+    state: AppState,
+    menu: &mut Menu,
+    boot_started: f64,
+    campaign: &SaveGame,
+    has_save: bool,
+    help_page: &mut usize,
+) -> Option<AppEvent> {
+    let activate = |menu: &Menu| match menu.activate() {
+        Some(MenuAction::Continue) if has_save => Some(AppEvent::Continue {
+            mission: campaign.mission,
+        }),
+        other => other.and_then(menu_event),
+    };
     let confirm = is_key_pressed(KeyCode::Enter) || is_key_pressed(KeyCode::Space);
     match state {
         AppState::Boot => {
@@ -47,13 +65,13 @@ fn state_input(state: AppState, menu: &mut Menu, boot_started: f64) -> Option<Ap
             for i in 0..menu.items().len() {
                 if screens::menu_item_rect(i).contains(vec2(mx, my)) && menu.select(i) {
                     if is_mouse_button_pressed(MouseButton::Left) {
-                        return menu.activate().and_then(menu_event);
+                        return activate(menu);
                     }
                     break;
                 }
             }
             if is_key_pressed(KeyCode::Enter) {
-                return menu.activate().and_then(menu_event);
+                return activate(menu);
             }
             is_key_pressed(KeyCode::Escape).then_some(AppEvent::QuitRequested)
         }
@@ -68,7 +86,8 @@ fn state_input(state: AppState, menu: &mut Menu, boot_started: f64) -> Option<Ap
         AppState::Space { .. } => {
             if is_key_pressed(KeyCode::Escape) {
                 Some(AppEvent::ToMenu)
-            } else if is_key_pressed(KeyCode::F9) {
+            } else if is_key_pressed(KeyCode::F9) && std::env::var_os("KAGGA_DEV").is_some() {
+                // developer skip: KAGGA_DEV=1
                 Some(AppEvent::MissionEnded { won: true })
             } else {
                 None
@@ -77,6 +96,30 @@ fn state_input(state: AppState, menu: &mut Menu, boot_started: f64) -> Option<Ap
         // The boarding scene reads its own keys (Esc inside it aborts back to the ship).
         AppState::Boarding { .. } => None,
         AppState::Debrief { .. } => confirm.then_some(AppEvent::DebriefDone),
+        AppState::Settings => None,
+        AppState::Help => {
+            let n = kagg2::gfx::help::pages().len();
+            if is_key_pressed(KeyCode::Right) {
+                *help_page = (*help_page + 1) % n;
+            }
+            if is_key_pressed(KeyCode::Left) {
+                *help_page = (*help_page + n - 1) % n;
+            }
+            is_key_pressed(KeyCode::Escape).then_some(AppEvent::ToMenu)
+        }
+        AppState::Ending { chosen } => {
+            if chosen == 0 {
+                if is_key_pressed(KeyCode::Key1) {
+                    Some(AppEvent::EndingChosen(Ending::BreakArmada.code()))
+                } else if is_key_pressed(KeyCode::Key2) {
+                    Some(AppEvent::EndingChosen(Ending::TakeThrone.code()))
+                } else {
+                    None
+                }
+            } else {
+                confirm.then_some(AppEvent::DebriefDone)
+            }
+        }
         AppState::Quit => None,
     }
 }
@@ -180,14 +223,22 @@ async fn main() {
         }
     };
 
+    let mut settings = save::load_settings();
+    let mut campaign = save::load_game().unwrap_or_else(SaveGame::new_game);
+    let mut has_save = save::load_game().is_some();
+    let mut settings_ui = SettingsUi::default();
+    let mut help_page = 0usize;
+    let mut loss_reason: &'static str = "";
     let mut mixer = Mixer::new().await;
-    let mut music_wanted = true;
+    mixer.vol.master = settings.volume;
+    mixer.refresh();
+    let mut music_wanted = settings.music;
     let mut vol_toast = 0.0f32;
     let mut forced: Option<AppEvent> = None;
     let mut board: Option<BoardScene> = None;
     let mut grabbed = false;
     let mut state = AppState::Boot;
-    let mut menu = Menu::main();
+    let mut menu = Menu::main(has_save);
     let mut stars = Starfield::new(300);
     let boot_started = get_time();
     let mut scene: Option<SpaceScene> = None;
@@ -197,8 +248,10 @@ async fn main() {
         .map(|name| Viewer::new(&assets, name.as_deref()));
     let mut frame = 0u32;
 
-    let start_scene = |sector: SectorId, cli: &Cli| {
+    let start_scene = |sector: SectorId, cli: &Cli, settings: &Settings| {
         let mut sc = SpaceScene::new(sector, 1);
+        sc.keys = settings.keys.clone();
+        sc.invert_y = settings.invert_y;
         if let (Some(p), Some(l)) = (cli.pos, cli.look) {
             sc.debug_place(p, l);
         } else if let Some(l) = cli.look {
@@ -226,29 +279,30 @@ async fn main() {
         sc
     };
     if let Some(t) = cli.board {
-        use kagga2::board::Theme;
+        use kagg2::board::Theme;
         let theme = [
             Theme::Corvette,
             Theme::Station,
             Theme::PrisonBarge,
             Theme::DreadnoughtBridge,
         ][(t.max(1) as usize - 1) % 4];
-        let mut b = BoardScene::new(kagga2::gfx::board_scene::BoardInfo {
+        let mut b = BoardScene::new(kagg2::gfx::board_scene::BoardInfo {
             theme,
             size: cli.size,
             label: "Test Ship".into(),
-            target: kagga2::sim::EntityId {
+            target: kagg2::sim::EntityId {
                 index: 0,
                 generation: 0,
             },
             seed: 11,
+            force: None,
         });
         b.auto_start = true;
         board = Some(b);
         state = AppState::Boarding { mission: 1 };
     }
     if let Some(sector) = cli.space {
-        scene = Some(start_scene(sector, &cli));
+        scene = Some(start_scene(sector, &cli, &settings));
         state = AppState::Space { mission: 1 };
     }
 
@@ -264,21 +318,81 @@ async fn main() {
             v.draw(&assets, &mut renderer);
         } else {
             stars.update(dt);
-            let mut input_event = state_input(state, &mut menu, boot_started);
+            if state == AppState::Settings && settings_ui.update(&mut settings) {
+                if let Err(e) = save::store_settings(&settings) {
+                    eprintln!("cannot save settings: {e}");
+                }
+                mixer.vol.master = settings.volume;
+                mixer.refresh();
+                music_wanted = settings.music;
+                forced = Some(AppEvent::ToMenu);
+            }
+            let mut input_event = state_input(
+                state,
+                &mut menu,
+                boot_started,
+                &campaign,
+                has_save,
+                &mut help_page,
+            );
             if matches!(state, AppState::Space { .. })
-                && is_key_pressed(KeyCode::B)
                 && let Some(sc) = scene.as_ref()
+                && is_key_pressed(sc.keys.get(Bind::Board))
                 && let Some(info) = sc.boardable()
             {
-                board = Some(BoardScene::new(info));
+                let mut b = BoardScene::new(info);
+                b.difficulty = settings.difficulty.scale();
+                b.sens = settings.mouse_sens;
+                b.invert_y = settings.invert_y;
+                board = Some(b);
                 input_event = Some(AppEvent::BeginBoarding);
             }
             if let Some(event) = input_event.or(forced.take()) {
                 let before = state;
+                match (event, before) {
+                    (AppEvent::NewGame, _) => {
+                        campaign = SaveGame::new_game();
+                        help_page = 0;
+                    }
+                    (AppEvent::MissionEnded { won }, AppState::Space { mission })
+                    | (AppEvent::MissionEnded { won }, AppState::Boarding { mission }) => {
+                        if let Some(sc) = scene.as_ref() {
+                            if won && let Some(c) = Carry::from_world(&sc.world) {
+                                campaign.carry = c;
+                            }
+                            if !sc.loss_reason().is_empty() {
+                                loss_reason = sc.loss_reason();
+                            }
+                        }
+                        if won {
+                            loss_reason = "";
+                            campaign.mission = (mission + 1).min(kagg2::app::MISSION_COUNT);
+                            has_save = true;
+                            if let Err(e) = save::store_game(&campaign) {
+                                eprintln!("cannot save game: {e}");
+                            }
+                        }
+                    }
+                    (AppEvent::EndingChosen(c), _) => {
+                        campaign.ending = c;
+                        if let Err(e) = save::store_game(&campaign) {
+                            eprintln!("cannot save game: {e}");
+                        }
+                    }
+                    _ => {}
+                }
                 state = state.next(event);
+                if state == AppState::MainMenu && before != AppState::MainMenu {
+                    menu = Menu::main(has_save);
+                }
+                if state == AppState::Settings {
+                    settings_ui = SettingsUi::default();
+                }
                 match (before, state) {
                     (AppState::Briefing { .. }, AppState::Space { mission }) => {
-                        scene = Some(start_scene(SectorId::for_mission(mission), &cli));
+                        let mut sc = start_scene(SectorId::for_mission(mission), &cli, &settings);
+                        sc.start_mission(mission, &campaign.carry, settings.difficulty.scale());
+                        scene = Some(sc);
                     }
                     (_, AppState::Space { .. }) => {}
                     (_, _) => {
@@ -299,6 +413,7 @@ async fn main() {
                 };
                 mixer.vol.master = (mixer.vol.master + d).clamp(0.0, 1.0);
                 mixer.refresh();
+                settings.volume = mixer.vol.master;
                 vol_toast = 1.5;
             }
             if is_key_pressed(KeyCode::F11) {
@@ -324,7 +439,8 @@ async fn main() {
                         if let Some(sc) = scene.as_mut() {
                             sc.apply_boarding(&b.info, &res);
                         }
-                        forced = Some(if res.outcome == kagga2::board::Outcome::Died {
+                        forced = Some(if res.outcome == kagg2::board::Outcome::Died {
+                            loss_reason = "YOUR BOARDING PARTY WAS LOST";
                             AppEvent::MissionEnded { won: false }
                         } else {
                             AppEvent::EndBoarding
@@ -349,7 +465,12 @@ async fn main() {
                 AppState::Briefing { mission } => screens::draw_briefing(mission),
                 AppState::Space { .. } => {}
                 AppState::Boarding { .. } => {}
-                AppState::Debrief { mission, won } => screens::draw_debrief(mission, won),
+                AppState::Debrief { mission, won } => {
+                    screens::draw_debrief(mission, won, loss_reason)
+                }
+                AppState::Settings => settings_ui.draw(&settings),
+                AppState::Help => screens::draw_help(help_page),
+                AppState::Ending { chosen } => screens::draw_ending(chosen),
                 AppState::Quit => {}
             }
         }
@@ -381,5 +502,8 @@ async fn main() {
             break;
         }
         next_frame().await;
+    }
+    if let Err(e) = save::store_settings(&settings) {
+        eprintln!("cannot save settings: {e}");
     }
 }

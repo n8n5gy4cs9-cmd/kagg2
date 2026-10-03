@@ -1,10 +1,10 @@
-# Kagga2 — Architecture
+# Kagg2 — Architecture
 
 ## Crate layout (single crate, lib + bins)
 
 ```
-Kagga2/
-├── Cargo.toml                 # name kagga2; version = single source of truth
+Kagg2/
+├── Cargo.toml                 # name kagg2; version = single source of truth
 ├── src/
 │   ├── lib.rs / main.rs       # main = macroquad loop, CLI dev flags (--viewer/--space/--shot)
 │   ├── app.rs                 # AppState machine (pure; testable)                     [T01]
@@ -21,9 +21,11 @@ Kagga2/
 │   │   ├── ai.rs              # Minion AI + wingmen, Order                                               [T09]
 │   │   ├── crew.rs            # crew-AI per station (AUTO toggles)                                       [T10]
 │   │   ├── systems.rs         # reactor budget, power/coolant, heat, health, repair teams                [T11/T12]
+│   │   ├── mission.rs         # campaign engine: Mission/Stage/Goal/Beat data, MissionState, Carry                   [T25-T27]
 │   │   ├── science.rs nav.rs  # scan/sweep/report; autopilot, warp, docking, mining, command router      [T13/T14/T16]
 │   │   ├── comms.rs econ.rs   # hail dialogs + taunts; prices, trade, services, shipyard                 [T15/T16]
 │   ├── board/                 # HEADLESS boarding actions: level.rs (generator) pmove.rs weapons.rs monster.rs world.rs  [T18-T24]
+│   ├── story.rs save.rs       # story text/verses/endings; settings + save files (text, versioned)        [T25-T28]
 │   ├── audio/                 # HEADLESS synth: SFX + music -> PCM/WAV                                   [T17]
 │   ├── gfx/                   # macroquad-only
 │   │   ├── render3d.rs        # pixel render target, post shader, lit models, billboards
@@ -31,6 +33,7 @@ Kagga2/
 │   │   ├── stations.rs ui.rs  # F1–F7 panels, immediate-mode widgets; panels emit Actions, never touch the world
 │   │   ├── board_scene.rs     # first-person renderer + objective screen + HUD; BoardInfo/BoardResult (T19/T24)
 │   │   ├── dock_ui.rs sound.rs # docked screen (mutates Ops via econ), playback Mixer
+│   │   ├── keys.rs help.rs settings_ui.rs  # rebindable flight keys, help text, settings screen          [T28/T29]
 │   │   ├── hud.rs cockpit.rs pixfont.rs viewer.rs screens.rs starfield.rs
 │   └── bin/texgen.rs          # writes assets/textures/*.png
 ├── assets/textures/*.png      # generated, committed (+ manifest.json, ../contact_sheet.png)

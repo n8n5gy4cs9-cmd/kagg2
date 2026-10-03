@@ -180,8 +180,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "kagga2"
-version = "0.25.0"
+name = "kagg2"
+version = "0.30.0"
 dependencies = [
  "glam",
  "macroquad",

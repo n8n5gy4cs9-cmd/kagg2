@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Kagga2 launcher. Usage:
+# Kagg2 launcher. Usage:
 #   ./run.sh                 normal game (main menu)
 #   ./run.sh fight [sector]  jump straight into a sector with enemies attacking (default: mars)
 #   ./run.sh dock  [sector]  start docked at the first friendly starbase (trade/shipyard UI)

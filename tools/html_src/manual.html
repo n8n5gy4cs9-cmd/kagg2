@@ -1,0 +1,98 @@
+<h1>Manual</h1>
+<p>Reference for everything in Kagg2 v0.30. For a guided start see the <a href="guide.html">player guide</a>.</p>
+<h2>Running and options</h2>
+<pre><code>./run.sh                    normal game (main menu)
+./run.sh fight [sector]     jump into a sector with enemies attacking (default mars)
+./run.sh dock  [sector]     start docked at the first friendly starbase
+./run.sh board [1-4] [size] boarding level: 1 corvette 2 station 3 prison barge 4 dreadnought, size 1-5
+./run.sh tab N [sector]     open station tab N (1 helm .. 7 map)
+./run.sh sector NAME        fly a sector: mars phobos belt jupiter luna earth
+./run.sh viewer [model]     model viewer
+./run.sh test               fmt check, clippy, tests
+./run.sh shot OUT.png [..]  save a screenshot and exit</code></pre>
+<p>These developer shortcuts start free flight without a mission. Extra flags for the binary: <code>--chase</code>, <code>--target</code>, <code>--fire</code>, <code>--throttle F</code>, <code>--pos x,y,z --look x,y,z</code>, <code>--frames N</code>. Environment: <code>KAGG2_HOME</code> (where settings and saves go), <code>KAGGA_FPS=1</code> (FPS counter), <code>KAGGA_DEV=1</code> (F9 completes the current mission).</p>
+<h2>Menus and screens</h2>
+<table><thead><tr><th>Screen</th><th>Keys</th></tr></thead><tbody>
+<tr><td>Main menu</td><td><kbd>Up</kbd>/<kbd>Down</kbd> or <kbd>W</kbd>/<kbd>S</kbd>, <kbd>Enter</kbd> or mouse; <kbd>Esc</kbd> quits</td></tr>
+<tr><td>Briefing</td><td><kbd>Enter</kbd> launch, <kbd>Esc</kbd> menu</td></tr>
+<tr><td>Debrief</td><td><kbd>Enter</kbd> continue (next mission after a win, retry after a loss)</td></tr>
+<tr><td>Ending</td><td><kbd>1</kbd> or <kbd>2</kbd> to choose, then <kbd>Enter</kbd></td></tr>
+<tr><td>Help</td><td><kbd>Left</kbd>/<kbd>Right</kbd> pages, <kbd>Esc</kbd> back</td></tr>
+<tr><td>Settings</td><td><kbd>Up</kbd>/<kbd>Down</kbd> select, <kbd>Left</kbd>/<kbd>Right</kbd> change, <kbd>Enter</kbd> rebind or activate, <kbd>Esc</kbd> save and return</td></tr>
+</tbody></table>
+<h2>Flight controls</h2>
+<p>These are the defaults; all rows marked <em>rebindable</em> can be changed in Settings.</p>
+<table><thead><tr><th>Action</th><th>Default</th><th>Rebindable</th></tr></thead><tbody>
+<tr><td>Throttle up / down</td><td><kbd>W</kbd> / <kbd>S</kbd></td><td>yes</td></tr>
+<tr><td>Full / zero throttle</td><td><kbd>Left Shift</kbd> / <kbd>X</kbd></td><td>yes</td></tr>
+<tr><td>Yaw left / right</td><td><kbd>A</kbd> / <kbd>D</kbd></td><td>yes</td></tr>
+<tr><td>Pitch up / down</td><td>arrow up / down</td><td>yes (and Invert Y)</td></tr>
+<tr><td>Roll left / right</td><td><kbd>Q</kbd> / <kbd>E</kbd></td><td>yes</td></tr>
+<tr><td>Strafe left / right</td><td>arrow left / right</td><td>yes</td></tr>
+<tr><td>Strafe up / down</td><td><kbd>R</kbd> / <kbd>F</kbd></td><td>yes</td></tr>
+<tr><td>Brake</td><td><kbd>Space</kbd></td><td>yes</td></tr>
+<tr><td>Fire lances</td><td><kbd>Enter</kbd> or left click on the Helm tab</td><td>key yes</td></tr>
+<tr><td>Torpedo / missile</td><td><kbd>Z</kbd> / <kbd>V</kbd></td><td>yes</td></tr>
+<tr><td>Next target / clear</td><td><kbd>T</kbd> / <kbd>G</kbd></td><td>yes</td></tr>
+<tr><td>Board ship</td><td><kbd>B</kbd></td><td>yes</td></tr>
+<tr><td>Dock / undock</td><td><kbd>L</kbd></td><td>yes</td></tr>
+<tr><td>Autopilot</td><td><kbd>P</kbd></td><td>yes</td></tr>
+<tr><td>Scan target</td><td><kbd>N</kbd></td><td>yes</td></tr>
+<tr><td>Camera (cockpit/chase)</td><td><kbd>C</kbd></td><td>yes</td></tr>
+<tr><td>Flight assist</td><td><kbd>M</kbd></td><td>yes</td></tr>
+<tr><td>Go to target (autopilot)</td><td><kbd>O</kbd></td><td>no</td></tr>
+<tr><td>Long-range sweep</td><td><kbd>U</kbd></td><td>no</td></tr>
+<tr><td>Mine targeted asteroid</td><td><kbd>K</kbd></td><td>no</td></tr>
+<tr><td>Lance frequency</td><td><kbd>[</kbd> <kbd>]</kbd></td><td>no</td></tr>
+<tr><td>Shield frequency</td><td><kbd>,</kbd> <kbd>.</kbd></td><td>no</td></tr>
+<tr><td>Stations</td><td><kbd>F1</kbd>–<kbd>F7</kbd></td><td>no</td></tr>
+<tr><td>Crew AUTO for the open station</td><td><kbd>Tab</kbd></td><td>no</td></tr>
+<tr><td>Station help overlay</td><td><kbd>F8</kbd></td><td>no</td></tr>
+<tr><td>Volume / music</td><td><kbd>-</kbd> <kbd>=</kbd> / <kbd>F11</kbd></td><td>no</td></tr>
+<tr><td>Leave to menu</td><td><kbd>Esc</kbd></td><td>no</td></tr>
+</tbody></table>
+<h2 id="stations">Stations</h2>
+<h3>F1 Helm</h3><p>Flies the ship. Throttle sets a target speed. With flight assist on, the ship damps drift; off, it is Newtonian. The Helm view accepts mouse fire. The autopilot steers around planets and moons.</p>
+<h3>F2 Weapons</h3><p>Lances (hitscan, heat), thunder torpedoes (slow, heavy), Gungnir missiles (homing, need a lock). Damage depends on the facing hit and on frequency matching.</p>
+<h3>F3 Engineering</h3><p>Reactor budget with power and coolant sliders for engines, warp, shields, lances, sensors and life support. Presets <kbd>1</kbd> balanced, <kbd>2</kbd> weapons, <kbd>3</kbd> shields. Heat beyond the limit burns a system out.</p>
+<h3>F4 Damage control</h3><p>System health and three repair teams you send to systems. Without life support you lose crew.</p>
+<h3>F5 Science</h3><p>Hold a scan on a target (<kbd>N</kbd>) to reveal its shield frequency, class and boarding difficulty. <kbd>U</kbd> runs a long-range sweep.</p>
+<h3>F6 Comms</h3><p>Hail (<kbd>H</kbd>), choose replies with the number keys, order wingmen, demand surrender, and read the message log.</p>
+<h3>F7 Map</h3><p>Sector map. Set a destination, add waypoints, start the autopilot, plot a warp to another sector (costs fuel; charge takes about 6 s at nominal power).</p>
+<h3>Crew AUTO</h3><p>Helm, Weapons, Engineering, Damage and Science can each run on AUTO at skill 0.7. AUTO is never as good as a focused player.</p>
+<h2>Ships and enemies</h2>
+<table><thead><tr><th>Class</th><th>Hull</th><th>Shield (per facing)</th><th>Torp/Missiles</th><th>Crew</th><th>Boarding</th></tr></thead><tbody>
+<tr><td>Longship (you)</td><td>260</td><td>120</td><td>8 / 12</td><td>24</td><td>3</td></tr>
+<tr><td>Skiff (wingman)</td><td>110</td><td>60</td><td>2 / 4</td><td>4</td><td>1</td></tr>
+<tr><td>Interceptor</td><td>60</td><td>35</td><td>0 / 2</td><td>2</td><td>1</td></tr>
+<tr><td>Cutter</td><td>120</td><td>70</td><td>2 / 3</td><td>8</td><td>2</td></tr>
+<tr><td>Frigate</td><td>260</td><td>130</td><td>4 / 4</td><td>20</td><td>3</td></tr>
+<tr><td>Destroyer</td><td>420</td><td>200</td><td>6 / 6</td><td>40</td><td>4</td></tr>
+<tr><td>Dreadnought</td><td>1100</td><td>480</td><td>12 / 12</td><td>120</td><td>5</td></tr>
+</tbody></table>
+<p>Minion AI: patrol, intercept, attack (circle-strafe), flee when hurt, call reinforcements. A ship with hull under 12 % may surrender and drift disabled.</p>
+<h2>Sectors</h2>
+<p>Mars Orbit (Mars, Forge, Phobos, Deimos), Phobos / Deimos (Phobos Relay), Asteroid Belt (Ceres, Belt Outpost), Jupiter / Ganymede (Ganymede Port), Luna (Tycho Fort), Earth Orbit (Concord forts, Geneva Dock). Warp gates are not built; warping between sectors uses the warp drive and fuel.</p>
+<h2>Starbases</h2>
+<p>Friendly stations (Forge, Phobos Relay, Belt Outpost, Ganymede Port) offer repair, rearm, refuel, shipyard upgrades (levels 1 to 3, costs 400 and 900 credits) and a market of 12 commodities: ore, ice, iron, steel, grain, mead, medicine, electronics, weapons, machinery, luxuries and runestones. Prices vary by station (±30 %) and drift (±15 % every 90 s).</p>
+<h2 id="boarding">Boarding actions</h2>
+<h3>Levels</h3><p>Generated from a seed: a tile grid of 4 m tiles, rooms chained from the airlock, themed as corvette, station, prison barge or dreadnought bridge, in five sizes. Up to three doors on the main path are locked (bronze, silver, gold) and each key lies in a region reachable without it; a solver checks every level.</p>
+<h3>Weapons</h3>
+<table><thead><tr><th>Slot</th><th>Weapon</th><th>Notes</th></tr></thead><tbody>
+<tr><td>1</td><td>Axe</td><td>damage 25, melee</td></tr><tr><td>2</td><td>Blaster</td><td>15</td></tr><tr><td>3</td><td>Scatter-gun</td><td>12 × 4 pellets</td></tr><tr><td>4</td><td>Rattler</td><td>8 at 10 shots a second</td></tr><tr><td>5</td><td>Mjolnir rockets</td><td>120 plus 5 m splash</td></tr><tr><td>6</td><td>Valkyrie rail</td><td>150, pierces</td></tr></tbody></table>
+<p>Armour absorbs 30 / 60 / 80 % depending on the amount held. Pick up health, ammunition, armour and keys.</p>
+<h3>Monsters (hit points)</h3>
+<p>Grunt 30 · Guard 100 · Gunner 175 · Medic 300 (revives corpses in 3 s) · Enforcer 240 (melee) · Mech 750 · Voss 1500. They see and hear you; an alarm calls everyone.</p>
+<h3>After a boarding</h3><p>Success: +15 credits per kill, +300 for the objective, +2 torpedoes and +3 missiles, and the ship is removed (captured or sabotaged). Crew lost equals damage taken divided by 25. Fleeing or dying ends the action; dying also ends the mission.</p>
+<h2>Settings and save files</h2>
+<table><thead><tr><th>Setting</th><th>Range</th></tr></thead><tbody>
+<tr><td>Difficulty</td><td>Thrall 0.7 · Karl 1.0 · Jarl 1.4</td></tr><tr><td>Master volume</td><td>0 to 100 %</td></tr><tr><td>Music</td><td>on / off</td></tr><tr><td>Mouse sensitivity</td><td>0.2× to 3.0× (boarding mouse-look)</td></tr><tr><td>Invert Y</td><td>flips space pitch and boarding look</td></tr><tr><td>Key bindings</td><td>26 flight actions; a clash shows in red</td></tr></tbody></table>
+<p>Files live in <code>$KAGG2_HOME</code>, otherwise <code>~/.kagg2/</code>: <code>settings.txt</code> (written when you leave Settings and on quit) and <code>save.txt</code> (written after each won mission: next mission, credits, upgrade levels, ending). Both are small readable text files with a version header; delete them to reset. A damaged file falls back to defaults.</p>
+<h2>Troubleshooting</h2>
+<table><thead><tr><th>Problem</th><th>Fix</th></tr></thead><tbody>
+<tr><td><code>cargo run</code> says it cannot pick a binary</td><td>Fixed: <code>default-run = "kagg2"</code> in <code>Cargo.toml</code>. The other binary is <code>texgen</code> (writes the texture PNGs).</td></tr>
+<tr><td>Game is slow</td><td>Use <code>./run.sh</code> (release). Debug builds are slow because meshes are lit on the CPU.</td></tr>
+<tr><td>Nothing can be boarded</td><td>Target the ship (<kbd>T</kbd>), get its hull under 60 % with shields gone, and close to 450 units.</td></tr>
+<tr><td>A key does nothing after rebinding</td><td>Another action may share the key (red rows in Settings), or the key is used by a station panel.</td></tr>
+<tr><td>Continue is greyed out</td><td>No <code>save.txt</code> yet: win mission 1 first.</td></tr>
+</tbody></table>

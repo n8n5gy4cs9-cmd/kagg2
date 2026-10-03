@@ -1,4 +1,4 @@
-# Kagga2 — Detailed Plan
+# Kagg2 — Detailed Plan
 
 > **Pitch:** Mars Vikings vs. the Earth Concord's Minions. You captain the longship *Huginn*:
 > fly and fight in a simplified Space-Nerds-in-Space bridge sim, then storm the enemy ships and
@@ -6,7 +6,7 @@
 
 ## 1. Pillars (what "fun but simple" means here)
 
-1. **One captain, a whole bridge.** SNIS needs 6+ humans. Kagga2 gives you every station in one
+1. **One captain, a whole bridge.** SNIS needs 6+ humans. Kagg2 gives you every station in one
    UI (tabs F1–F7) and an AI **crew** that runs the stations you are not on. Take over any
    station for better results. (This is also the multiplayer seam: later a human takes the seat.)
 2. **Few systems, each with a lever.** 6 ship systems, 3 weapons, 1 shield mechanic, 1 power
@@ -53,7 +53,7 @@ Acceptance = what must be true to tick the task. Every task also needs: `cargo c
 `cargo clippy -- -D warnings`, `cargo test`, `cargo fmt` clean (see root `AGENTS.md`).
 
 ### M0 — Foundation
-- **T01 Project skeleton.** `Cargo.toml` (name `kagga2`, version `0.1.0`), `src/lib.rs` (+
+- **T01 Project skeleton.** `Cargo.toml` (name `kagg2`, version `0.1.0`), `src/lib.rs` (+
   `version_label()`), `src/main.rs`, app state machine (`Boot → MainMenu → Briefing → Space |
   Boarding → Debrief`), main menu (New Game / Continue(disabled) / Settings(disabled) / Quit),
   animated starfield, title + story blurb, window 1280×720 resizable. *Accept:* game window

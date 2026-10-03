@@ -30,6 +30,8 @@ pub struct BoardInfo {
     pub label: String,
     pub target: EntityId,
     pub seed: u64,
+    /// Campaign missions demand one objective; `None` lets the player choose.
+    pub force: Option<Objective>,
 }
 
 /// What came out of the boarding action.
@@ -77,6 +79,22 @@ pub struct BoardScene {
     result: Option<BoardResult>,
     /// Developer: skip the objective screen and face the longest sightline.
     pub auto_start: bool,
+    /// Enemy toughness scale from the settings.
+    pub difficulty: f32,
+    /// Mouse-look multiplier and Y inversion from the settings.
+    pub sens: f32,
+    pub invert_y: bool,
+}
+
+/// One-element objective list for a campaign-forced objective.
+fn single(o: Objective) -> &'static [Objective] {
+    match o {
+        Objective::Sabotage => &[Objective::Sabotage],
+        Objective::CaptureBridge => &[Objective::CaptureBridge],
+        Objective::Rescue => &[Objective::Rescue],
+        Objective::StealData => &[Objective::StealData],
+        Objective::KillBoss => &[Objective::KillBoss],
+    }
 }
 
 impl BoardScene {
@@ -98,6 +116,9 @@ impl BoardScene {
             health_start: 100.0,
             result: None,
             auto_start: false,
+            difficulty: 1.0,
+            sens: 1.0,
+            invert_y: false,
         }
     }
 
@@ -111,14 +132,18 @@ impl BoardScene {
     }
 
     fn objectives(&self) -> &'static [Objective] {
-        Objective::for_theme(self.info.theme)
+        match self.info.force {
+            Some(o) => single(o),
+            None => Objective::for_theme(self.info.theme),
+        }
     }
 
     fn start(&mut self, assets: &Assets) {
         let obj = self.objectives()[self.choice.min(self.objectives().len() - 1)];
         let level = generate(self.info.seed, self.info.theme, obj, self.info.size);
         self.meshes = build_meshes(&level, assets);
-        let world = BoardWorld::new(level, self.info.seed);
+        let mut world = BoardWorld::new(level, self.info.seed);
+        world.difficulty = self.difficulty;
         self.health_start = world.player.health;
         self.world = Some(world);
         if self.auto_start
@@ -232,8 +257,10 @@ impl BoardScene {
         let m = vec2(mx, my);
         if let Some(l) = self.last_mouse {
             let d = m - l;
-            w.player.yaw -= d.x * 0.0028;
-            w.player.pitch = (w.player.pitch - d.y * 0.0028).clamp(-1.45, 1.45);
+            let k = 0.0028 * self.sens;
+            let dy = if self.invert_y { -d.y } else { d.y };
+            w.player.yaw -= d.x * k;
+            w.player.pitch = (w.player.pitch - dy * k).clamp(-1.45, 1.45);
         }
         self.last_mouse = Some(m);
         let k = is_key_down;
@@ -390,7 +417,11 @@ impl BoardScene {
             );
             pixfont::draw_centered(
                 assets,
-                "CHOOSE YOUR OBJECTIVE",
+                if self.info.force.is_some() {
+                    "MISSION OBJECTIVE"
+                } else {
+                    "CHOOSE YOUR OBJECTIVE"
+                },
                 sw / 2.0,
                 sh * 0.42,
                 ui,
@@ -421,14 +452,16 @@ impl BoardScene {
                 ui,
                 Color::new(0.5, 0.5, 0.55, 1.0),
             );
-            pixfont::draw_centered(
-                assets,
-                "WASD MOVE  MOUSE LOOK  SPACE JUMP  C CROUCH  CLICK FIRE  1-6 WEAPONS  E USE",
-                sw / 2.0,
-                sh * 0.86,
-                ui,
-                Color::new(0.5, 0.5, 0.55, 1.0),
-            );
+            for (i, line) in super::help::BOARDING.iter().enumerate() {
+                pixfont::draw_centered(
+                    assets,
+                    line,
+                    sw / 2.0,
+                    sh * 0.86 + i as f32 * 5.0 * ui,
+                    (ui * 0.5).round().max(1.0),
+                    Color::new(0.5, 0.5, 0.55, 1.0),
+                );
+            }
             return;
         }
         let (iw, ih) = r.ensure_target();

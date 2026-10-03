@@ -1,4 +1,4 @@
-# Kagga2 — Story
+# Kagg2 — Story
 
 ## Setting
 

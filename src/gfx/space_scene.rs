@@ -7,7 +7,10 @@ use macroquad::prelude::*;
 use super::board_scene::{BoardInfo, BoardResult};
 use super::cockpit;
 use super::dock_ui::{self, DockState};
+use super::help;
 use super::hud::{self, HudData};
+use super::keys::{Bind, Bindings};
+use super::pixfont;
 use super::render3d::{
     Pose, Renderer, Shade, draw_billboard, draw_billboard_uv, draw_model, draw_streak,
 };
@@ -19,6 +22,7 @@ use crate::audio::Sfx;
 use crate::sim::comms::{self, Reply};
 use crate::sim::event::{Event, Ordnance};
 use crate::sim::flight::{FORWARD, RIGHT, UP};
+use crate::sim::mission::{Carry, MissionState, Note};
 use crate::sim::ops::{Dest, Faction};
 use crate::sim::sector::{SectorId, SkyKind};
 use crate::sim::{Addressed, Command, EntityId, Kind, Stepper, World, new_game, transfer};
@@ -65,6 +69,10 @@ struct Fx {
 
 const BEAM_LIFE: f32 = 0.2;
 
+fn pressed_help() -> bool {
+    is_key_pressed(KeyCode::F8)
+}
+
 pub struct SpaceScene {
     pub world: World,
     stepper: Stepper,
@@ -91,6 +99,15 @@ pub struct SpaceScene {
     dead_for: f32,
     alarm_cd: f32,
     hint_for: Option<EntityId>,
+    /// Active campaign mission, if any (free flight has none).
+    pub mission: Option<MissionState>,
+    /// Dialogue captions with seconds left.
+    captions: Vec<(Note, f32)>,
+    /// Seconds since the mission was decided.
+    ended_for: f32,
+    pub keys: Bindings,
+    pub invert_y: bool,
+    help_station: bool,
 }
 
 fn star_field() -> Vec<Star> {
@@ -153,12 +170,39 @@ impl SpaceScene {
             dead_for: 0.0,
             alarm_cd: 0.0,
             hint_for: None,
+            mission: None,
+            captions: Vec::new(),
+            ended_for: 0.0,
+            keys: Bindings::default(),
+            invert_y: false,
+            help_station: false,
         }
     }
 
-    /// `Some(false)` once the player's ship has been dead long enough to end the mission.
+    /// Start campaign mission `id`: carry the ship over, scale enemies, spawn the first stage.
+    pub fn start_mission(&mut self, id: u8, carry: &Carry, difficulty: f32) {
+        self.world.difficulty = difficulty;
+        carry.apply(&mut self.world);
+        let mut m = MissionState::new(id);
+        m.begin(&mut self.world);
+        self.mission = Some(m);
+    }
+
+    /// Why the mission was lost, for the debrief.
+    pub fn loss_reason(&self) -> &'static str {
+        self.mission.as_ref().map_or("", MissionState::reason)
+    }
+
+    /// `Some(won)` once the mission is decided (after a short beat), or when the ship has been
+    /// dead long enough.
     pub fn outcome(&self) -> Option<bool> {
-        (self.dead_for > 4.0).then_some(false)
+        if self.dead_for > 4.0 {
+            return Some(false);
+        }
+        self.mission
+            .as_ref()
+            .and_then(MissionState::result)
+            .filter(|_| self.ended_for > 3.0)
     }
 
     /// Boarding is possible against a hostile ship that is disabled — or crippled (hull < 60 %
@@ -172,20 +216,21 @@ impl SpaceScene {
         if t.kind != Kind::Ship || !t.faction.hostile_to(me.faction) || o.dead {
             return None;
         }
-        let crippled = o.hull < o.max_hull * 0.6 && o.shield_total() < o.max_shield * 4.0 * 0.15;
-        if !(o.disabled || crippled) {
+        if !(o.disabled || o.crippled()) {
             return None;
         }
         if me.pos.distance(t.pos) - me.radius - t.radius > 450.0 {
             return None;
         }
         let seed = self.world.tick ^ ((id.index as u64) << 32);
-        let (theme, size) = match o.class_name {
-            "Interceptor" => (Theme::Corvette, 1),
-            "Cutter" if seed.is_multiple_of(2) => (Theme::PrisonBarge, 2),
-            "Cutter" => (Theme::Corvette, 2),
-            "Frigate" => (Theme::Station, 3),
-            "Destroyer" => (Theme::Station, 4),
+        let (theme, size) = match (t.label, o.class_name) {
+            (l, _) if l.starts_with("Prison Barge") => (Theme::PrisonBarge, 3),
+            (l, _) if l.starts_with("Courier") => (Theme::Corvette, 2),
+            (_, "Interceptor") => (Theme::Corvette, 1),
+            (_, "Cutter") if seed.is_multiple_of(2) => (Theme::PrisonBarge, 2),
+            (_, "Cutter") => (Theme::Corvette, 2),
+            (_, "Frigate") => (Theme::Station, 3),
+            (_, "Destroyer") => (Theme::Station, 4),
             _ => (Theme::DreadnoughtBridge, 5),
         };
         Some(BoardInfo {
@@ -194,6 +239,7 @@ impl SpaceScene {
             label: t.label.to_owned(),
             target: id,
             seed,
+            force: self.mission.as_ref().and_then(|m| m.board_wanted(t.label)),
         })
     }
 
@@ -202,6 +248,9 @@ impl SpaceScene {
     pub fn apply_boarding(&mut self, info: &BoardInfo, res: &BoardResult) {
         use crate::board::{Objective, Outcome};
         let won = res.outcome == Outcome::Won;
+        if let Some(m) = self.mission.as_mut() {
+            m.on_boarding(&info.label, res.objective, won && res.objective_done);
+        }
         let casualties = (res.damage_taken / 25.0).round() as u32;
         let me = self.world.player;
         if let Some(o) = me
@@ -467,9 +516,24 @@ impl SpaceScene {
         let dead = self.ops().is_none_or(|o| o.dead);
         if dead {
             self.dead_for += dt;
+            if let Some(m) = self.mission.as_mut() {
+                m.fail("YOUR SHIP WAS DESTROYED");
+            }
         }
+        if self.mission.as_ref().is_some_and(|m| m.result().is_some()) {
+            self.ended_for += dt;
+        }
+        for c in &mut self.captions {
+            c.1 -= dt;
+        }
+        self.captions.retain(|c| c.1 > 0.0);
         let docked = self.ops().and_then(|o| o.docked).map(|d| d.0);
+        let keys = self.keys.clone();
+        let kb = |b: Bind| keys.get(b);
         let k = is_key_down;
+        if pressed_help() {
+            self.help_station = !self.help_station;
+        }
         let pressed = is_key_pressed;
         let axis = |neg: KeyCode, pos: KeyCode| (k(pos) as i32 - k(neg) as i32) as f32;
         let mut cmds: Vec<Command> = Vec::new();
@@ -503,54 +567,56 @@ impl SpaceScene {
         }
 
         if docked.is_some() {
-            if pressed(KeyCode::L) {
+            if pressed(kb(Bind::Dock)) {
                 cmds.push(Command::Dock(None));
             }
         } else if !dead {
             // --- flight
-            let thr = axis(KeyCode::S, KeyCode::W);
+            let thr = axis(kb(Bind::ThrottleDown), kb(Bind::ThrottleUp));
             if thr != 0.0 {
                 cmds.push(Command::AdjustThrottle(thr * 0.55 * dt));
             }
-            if pressed(KeyCode::X) {
+            if pressed(kb(Bind::ZeroThrottle)) {
                 cmds.push(Command::SetThrottle(0.0));
             }
-            if pressed(KeyCode::LeftShift) {
+            if pressed(kb(Bind::FullThrottle)) {
                 cmds.push(Command::SetThrottle(1.0));
             }
             let turn = Command::Turn {
-                pitch: axis(KeyCode::Up, KeyCode::Down), // down = pull back = nose up
-                yaw: axis(KeyCode::D, KeyCode::A),       // A = left = positive yaw
-                roll: axis(KeyCode::Q, KeyCode::E),
+                // default: down = pull back = nose up
+                pitch: axis(kb(Bind::PitchUp), kb(Bind::PitchDown))
+                    * if self.invert_y { -1.0 } else { 1.0 },
+                yaw: axis(kb(Bind::YawRight), kb(Bind::YawLeft)), // left = positive yaw
+                roll: axis(kb(Bind::RollLeft), kb(Bind::RollRight)),
             };
             let strafe = Command::Strafe {
-                x: axis(KeyCode::Left, KeyCode::Right),
-                y: axis(KeyCode::F, KeyCode::R),
+                x: axis(kb(Bind::StrafeLeft), kb(Bind::StrafeRight)),
+                y: axis(kb(Bind::StrafeDown), kb(Bind::StrafeUp)),
             };
             let manual = thr != 0.0
-                || k(KeyCode::Space)
                 || [
-                    KeyCode::A,
-                    KeyCode::D,
-                    KeyCode::Q,
-                    KeyCode::E,
-                    KeyCode::Up,
-                    KeyCode::Down,
-                    KeyCode::Left,
-                    KeyCode::Right,
-                    KeyCode::R,
-                    KeyCode::F,
+                    Bind::Brake,
+                    Bind::YawLeft,
+                    Bind::YawRight,
+                    Bind::RollLeft,
+                    Bind::RollRight,
+                    Bind::PitchUp,
+                    Bind::PitchDown,
+                    Bind::StrafeLeft,
+                    Bind::StrafeRight,
+                    Bind::StrafeUp,
+                    Bind::StrafeDown,
                 ]
                 .iter()
-                .any(|c| k(*c));
+                .any(|b| k(kb(*b)));
             let autopilot = self.ops().is_some_and(|o| o.nav.autopilot);
             if manual && autopilot {
                 cmds.push(Command::Autopilot(false));
             }
             cmds.push(turn);
             cmds.push(strafe);
-            cmds.push(Command::Brake(k(KeyCode::Space)));
-            if pressed(KeyCode::M) {
+            cmds.push(Command::Brake(k(kb(Bind::Brake))));
+            if pressed(kb(Bind::Assist)) {
                 let assist = self
                     .world
                     .get(me)
@@ -560,13 +626,13 @@ impl SpaceScene {
             }
             // --- weapons
             let click_fire = tab == Tab::Helm && is_mouse_button_down(MouseButton::Left);
-            if k(KeyCode::Enter) || click_fire || self.autofire {
+            if k(kb(Bind::Fire)) || click_fire || self.autofire {
                 cmds.push(Command::FireLance);
             }
-            if pressed(KeyCode::Z) {
+            if pressed(kb(Bind::Torpedo)) {
                 cmds.push(Command::FireTorpedo);
             }
-            if pressed(KeyCode::V) {
+            if pressed(kb(Bind::Missile)) {
                 cmds.push(Command::FireMissile);
             }
             let (lf, sf) = self.ops().map_or((0, 0), |o| (o.lance_freq, o.shield_freq));
@@ -583,7 +649,7 @@ impl SpaceScene {
                 cmds.push(Command::SetShieldFreq((sf + 1).min(9)));
             }
             // --- nav / science / starbase
-            if pressed(KeyCode::P) {
+            if pressed(kb(Bind::Autopilot)) {
                 cmds.push(Command::Autopilot(!autopilot));
             }
             if pressed(KeyCode::O)
@@ -592,7 +658,7 @@ impl SpaceScene {
                 cmds.push(Command::SetDest(Dest::Body(t)));
                 cmds.push(Command::Autopilot(true));
             }
-            if pressed(KeyCode::N)
+            if pressed(kb(Bind::Scan))
                 && let Some(t) = self.target
             {
                 cmds.push(Command::Scan(Some(t)));
@@ -604,7 +670,7 @@ impl SpaceScene {
                 let mining = self.ops().is_some_and(|o| o.mining.is_some());
                 cmds.push(Command::Mine(if mining { None } else { self.target }));
             }
-            if pressed(KeyCode::L)
+            if pressed(kb(Bind::Dock))
                 && let Some(t) = self.target
             {
                 cmds.push(Command::Dock(Some(t)));
@@ -639,17 +705,17 @@ impl SpaceScene {
             } else if pressed(KeyCode::H) {
                 self.help_left = if self.help_left > 0.0 { 0.0 } else { 18.0 };
             }
-            if pressed(KeyCode::C) {
+            if pressed(kb(Bind::Camera)) {
                 self.mode = if self.mode == CamMode::Cockpit {
                     CamMode::Chase
                 } else {
                     CamMode::Cockpit
                 };
             }
-            if pressed(KeyCode::T) {
+            if pressed(kb(Bind::NextTarget)) {
                 self.cycle_target(1);
             }
-            if pressed(KeyCode::G) {
+            if pressed(kb(Bind::ClearTarget)) {
                 self.target = None;
             }
         }
@@ -708,6 +774,9 @@ impl SpaceScene {
             let queued = std::mem::take(&mut self.queue);
             let events = self.world.step(if first { &queued } else { &[] });
             first = false;
+            if let Some(m) = self.mission.as_mut() {
+                m.update(&mut self.world, &events);
+            }
             for e in events {
                 if self.on_event(e, me, snd) {
                     break 'steps;
@@ -724,6 +793,19 @@ impl SpaceScene {
                 {
                     s.apply(a.cmd);
                 }
+            }
+        }
+        if let Some(m) = self.mission.as_mut() {
+            for n in m.take_notes() {
+                if n.who.is_empty() {
+                    self.messages.push((n.text.to_owned(), 3.0));
+                } else {
+                    self.ui.say(format!("{}: {}", n.who, n.text));
+                    self.captions.push((n, 7.0));
+                }
+            }
+            if self.captions.len() > 3 {
+                self.captions.remove(0);
             }
         }
         for m in &mut self.messages {
@@ -1060,6 +1142,7 @@ impl SpaceScene {
                 Color::new(1.0, 0.08, 0.04, self.hurt * 0.35),
             );
         }
+        self.draw_mission(assets, ui_scale);
         // --- station tabs, panels, docked screen
         let panel_fs = (ui_scale * 0.75).round().max(2.0);
         let c = Ctx::new(assets, panel_fs);
@@ -1096,6 +1179,115 @@ impl SpaceScene {
                 sh * 0.42,
                 ui_scale * 3.0,
                 Color::new(1.0, 0.3, 0.2, 1.0),
+            );
+        }
+    }
+
+    /// Objective line, time limit, dialogue captions, loss reason and the F8 station help.
+    fn draw_mission(&self, assets: &Assets, ui: f32) {
+        let (sw, sh) = (screen_width(), screen_height());
+        let gold = Color::new(1.0, 0.85, 0.2, 1.0);
+        let bone = Color::new(0.85, 0.8, 0.7, 1.0);
+        if let Some(m) = &self.mission {
+            if let Some(text) = m.objective() {
+                let (n, total) = m.progress();
+                let mut line = format!("OBJECTIVE {n}/{total}: {text}");
+                if let Some(t) = m.time_left(&self.world) {
+                    line.push_str(&format!("  [{}:{:02}]", t as u32 / 60, t as u32 % 60));
+                }
+                let w = pixfont::width(&line, ui * 0.5).min(sw - 20.0);
+                draw_rectangle(
+                    sw / 2.0 - w / 2.0 - 8.0,
+                    6.0,
+                    w + 16.0,
+                    ui * 5.0 + 10.0,
+                    Color::new(0.04, 0.07, 0.10, 0.7),
+                );
+                pixfont::draw_centered(
+                    assets,
+                    &line,
+                    sw / 2.0,
+                    11.0,
+                    (ui * 0.5).round().max(1.0),
+                    gold,
+                );
+            }
+            match m.result() {
+                Some(true) => pixfont::draw_centered(
+                    assets,
+                    "MISSION COMPLETE",
+                    sw / 2.0,
+                    sh * 0.3,
+                    ui * 2.0,
+                    gold,
+                ),
+                Some(false) if self.dead_for == 0.0 => {
+                    let red = Color::new(1.0, 0.3, 0.2, 1.0);
+                    pixfont::draw_centered(
+                        assets,
+                        "MISSION FAILED",
+                        sw / 2.0,
+                        sh * 0.3,
+                        ui * 2.0,
+                        red,
+                    );
+                    pixfont::draw_centered(
+                        assets,
+                        m.reason(),
+                        sw / 2.0,
+                        sh * 0.3 + ui * 14.0,
+                        (ui * 0.5).round().max(1.0),
+                        bone,
+                    );
+                }
+                _ => {}
+            }
+        }
+        let fs = (ui * 0.5).round().max(1.0);
+        for (i, (n, ttl)) in self.captions.iter().enumerate() {
+            let a = (ttl / 1.0).min(1.0);
+            let y = sh * 0.72 - (self.captions.len() - i) as f32 * ui * 7.0;
+            let line = format!("{}: {}", n.who, n.text);
+            let w = pixfont::width(&line, fs).min(sw - 20.0);
+            draw_rectangle(
+                sw / 2.0 - w / 2.0 - 8.0,
+                y - 4.0,
+                w + 16.0,
+                fs * 7.0 + 8.0,
+                Color::new(0.04, 0.07, 0.10, 0.65 * a),
+            );
+            pixfont::draw_centered(
+                assets,
+                &line,
+                sw / 2.0,
+                y,
+                fs,
+                Color::new(bone.r, bone.g, bone.b, a),
+            );
+        }
+        if self.help_station && self.ops().is_some_and(|o| o.docked.is_none()) {
+            let lines = help::station(self.ui.tab);
+            let lh = ui * 4.5;
+            let w = sw * 0.6;
+            let (x, y) = (sw * 0.2, sh * 0.2);
+            draw_rectangle(
+                x - 10.0,
+                y - 10.0,
+                w + 20.0,
+                lines.len() as f32 * lh + 40.0,
+                Color::new(0.04, 0.07, 0.10, 0.9),
+            );
+            for (i, l) in lines.iter().enumerate() {
+                let c = if i == 0 { gold } else { bone };
+                pixfont::draw(assets, l, x, y + i as f32 * lh, fs, c);
+            }
+            pixfont::draw(
+                assets,
+                "F8 CLOSES THIS HELP",
+                x,
+                y + lines.len() as f32 * lh + 8.0,
+                fs,
+                Color::new(0.5, 0.5, 0.55, 1.0),
             );
         }
     }
@@ -1284,5 +1476,40 @@ mod tests {
         assert_eq!(credits(&sc) - c0, 360);
         assert!(sc.ops().is_some_and(|o| o.sys.crew == crew0 - 2));
         assert!(sc.world.get(v).is_none());
+    }
+
+    #[test]
+    fn mission_start_clears_stock_enemies_and_applies_carry() {
+        let mut sc = SpaceScene::new(SectorId::MarsOrbit, 1);
+        let carry = Carry {
+            credits: 777,
+            up: [1, 2, 1, 1, 1],
+        };
+        sc.start_mission(1, &carry, 0.7);
+        assert_eq!(sc.world.difficulty, 0.7);
+        assert_eq!(
+            sc.ops().map(|o| (o.cargo.credits, o.up.shield)),
+            Some((777, 2))
+        );
+        assert!(
+            !sc.world
+                .iter()
+                .any(|(_, e)| e.kind == Kind::Ship && e.faction == Faction::Minion)
+        );
+        assert_eq!(sc.outcome(), None);
+        assert!(sc.mission.as_ref().and_then(|m| m.objective()).is_some());
+    }
+
+    #[test]
+    fn decided_mission_ends_after_a_beat() {
+        let mut sc = SpaceScene::new(SectorId::MarsOrbit, 1);
+        sc.start_mission(1, &Carry::default(), 1.0);
+        if let Some(m) = sc.mission.as_mut() {
+            m.fail("TEST");
+        }
+        assert_eq!(sc.outcome(), None, "waits for the failure banner");
+        sc.ended_for = 3.5;
+        assert_eq!(sc.outcome(), Some(false));
+        assert_eq!(sc.loss_reason(), "TEST");
     }
 }

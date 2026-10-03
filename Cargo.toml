@@ -1,7 +1,8 @@
 [package]
-name = "kagga2"
-version = "0.25.0"
+name = "kagg2"
+version = "0.30.0"
 edition = "2024"
+default-run = "kagg2"
 
 [dependencies]
 macroquad = { version = "0.4.16", features = ["audio"] }

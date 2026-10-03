@@ -1,4 +1,4 @@
-# Kagga2 — Game Design
+# Kagg2 — Game Design
 
 ## 1. Loop
 
@@ -172,3 +172,14 @@ A seat = (station, controller) where controller is `CrewAi` or `Human(player_id)
 - **Outcome in space:** win → +credits (15 per kill, +300 for an objective), +2 torpedoes/+3 missiles, boarded ship removed (captured or sabotaged); crew lost = damage taken / 25.
 - **Combat numbers:** blaster 15, scatter-gun 12×4, rattler 8 @10/s, Mjolnir 120 + 5 m splash, Valkyrie 150 piercing, axe 25; armour absorbs 30/60/80 % by amount held.
   Monsters (hp): grunt 30, guard 100, gunner 175, medic 300 (revives corpses in 3 s), enforcer 240 (melee), mech 750, Voss 1500.
+
+## 9. As built in M3 (v0.30)
+- **Mission engine** (`sim/mission.rs`, headless): a mission is a list of *stages*; each has a goal, timed *beats* (dialogue lines and ship spawns), an optional "must not be destroyed" label prefix and an optional time limit.
+  Goals: throttle, target, reach a body, dock, scan N, hold ore, buy an upgrade, wait, clear all hostiles (optionally except a label), label gone, label crippled, complete a boarding with a given objective, escort haulers.
+  `SpaceScene` steps it after every sim step; notes become HUD captions; a decided mission ends after a 3 s banner. Stock sector enemies are removed so missions spawn their own.
+- **Campaign:** 1 First Raven (tutorial) · 2 Phobos Watch · 3 Iron Tithe · 4 Boarding Party (steal data) · 5 The Silent Moon (rescue) · 6 Jovian Toll (upgrade) · 7 Wolves of the Belt (wingmen) · 8 Gate of Frost (3 s generators on a timer, sabotage) ·
+  9 Luna Siege (sabotage the Bulwark) · 10 Ragnarök Over Earth (kill Voss on Aegis Prime). Win → next mission, loss → retry. After mission 10 the player picks an ending.
+- **Carry-over:** credits and upgrade levels (`Carry`); each mission refits hull, shields and ammo.
+- **Settings** (`~/.kagg2/settings.txt`, or `$KAGG2_HOME`): difficulty scale Thrall 0.7 / Karl 1.0 / Jarl 1.4 (enemy aim and boarding damage), volume, music, mouse sensitivity, invert-Y, 26 flight keys.
+  **Save** (`save.txt`): next mission, credits, upgrades, ending; written after each won mission. Dev skip: `KAGGA_DEV=1` enables F9.
+- **Help:** F8 = overlay for the open station tab, boarding card on the objective screen, menu Help screen (flight, boarding, each station, tips).

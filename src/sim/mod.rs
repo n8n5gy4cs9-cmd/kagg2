@@ -11,6 +11,7 @@ pub mod crew;
 pub mod econ;
 pub mod event;
 pub mod flight;
+pub mod mission;
 pub mod nav;
 pub mod ops;
 pub mod rng;

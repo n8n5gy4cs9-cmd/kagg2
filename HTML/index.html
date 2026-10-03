@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kagg2 — Kagg2</title><meta name="description" content="Kagg2: Mars Vikings against the Earth Minions. A bridge-simulator and boarding-FPS campaign.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%237ff0cf' d='M16 2l5 9h-4v5l6-4v5l-6 4v9h-2v-9l-6-4v-5l6 4v-5h-4z'/%3E%3C/svg%3E">
+<style>@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Pixelify+Sans:wght@400;600&display=swap');
+:root{--bg:#070b1e;--bg2:#0b1430;--panel:#0d1730;--ink:#eaf2f6;--mint:#3df2b0;--gold:#ffcf5a;--ice:#5fe0ff;--muted:#9aaac0;--line:#2a3f66;--code:#08102a;--link:#7be8ff}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:90px}
+body{margin:0;background:radial-gradient(ellipse at 50% -10%,#16286055,transparent 60%),var(--bg);color:var(--ink);font:16px/1.7 'Space Grotesk',system-ui,Arial,sans-serif}
+a{color:inherit;text-decoration:none}button{font:inherit;cursor:pointer}
+header{height:84px;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:0 5.5%;background:#060a1cf2;border-bottom:3px solid #1b2c58;box-shadow:0 3px 0 #0003;position:sticky;top:0;z-index:20;backdrop-filter:blur(8px)}
+.brand{font-family:'Pixelify Sans','Space Grotesk',sans-serif;font-size:22px;font-weight:700;letter-spacing:3px;display:flex;align-items:center;gap:12px;white-space:nowrap;color:var(--gold);text-shadow:2px 2px 0 #04081a}
+.rune{font-size:32px;color:var(--ice);line-height:1}
+nav{font-family:'Pixelify Sans','Space Grotesk',sans-serif;display:flex;flex-wrap:wrap;gap:4px 18px;font-size:14px;color:#b5c3dc}
+nav a{padding:4px 0;border-bottom:3px solid transparent}nav a:hover{color:var(--gold)}nav a.on{color:var(--gold);border-color:var(--gold)}
+.nav-cta,.button{font-family:'Pixelify Sans',sans-serif;background:linear-gradient(#ffd96e,#e9a93a);color:#2a1706;border:0;box-shadow:0 4px 0 #8a5a16,0 0 0 3px #2a1706,0 0 0 5px #ffcf5a60;letter-spacing:.5px;padding:11px 18px;font-size:14px;display:inline-flex;gap:18px;white-space:nowrap}
+.nav-cta span,.button span{color:#7a4a10}.button:hover,.nav-cta:hover{transform:translateY(-2px);filter:brightness(1.08)}
+.hero{position:relative;overflow:hidden;padding:90px 6% 80px;text-align:center;background:radial-gradient(ellipse 60% 70% at 50% 30%,#1c3a7a66,transparent 70%),#050a1c;border-bottom:3px solid #1b2c58}
+.hero:before{content:"";position:absolute;inset:0;background-image:radial-gradient(#fff 1px,transparent 1px),radial-gradient(#9ec9ff 1px,transparent 1px);background-size:90px 90px,140px 140px;background-position:0 0,40px 60px;opacity:.25}
+.hero>*{position:relative}
+.eyebrow{font-family:'Pixelify Sans',sans-serif;font-size:12px;letter-spacing:2px;color:var(--ice);display:flex;align-items:center;justify-content:center;gap:10px;text-transform:uppercase}
+.eyebrow span{width:5px;height:5px;background:var(--gold)}
+.hero h1{font-family:'Pixelify Sans',sans-serif;font-size:clamp(60px,9vw,120px);font-weight:600;line-height:.95;letter-spacing:2px;margin:22px 0 18px;color:var(--gold);text-shadow:4px 5px 0 #04081a}
+.hero p{max-width:640px;margin:0 auto 22px;color:#d3def0;font-size:16px}
+.actions{display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin-top:26px}
+.section{max-width:1240px;margin:auto;padding:70px 40px}
+h2{font-family:'Pixelify Sans',sans-serif;font-weight:400;font-size:38px;line-height:1.15;margin:15px 0 0}
+h3{font-family:'Pixelify Sans',sans-serif;font-weight:400;font-size:24px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;margin-top:30px}
+.cards a{border:3px solid #2a3f66;background:var(--panel);box-shadow:inset 0 0 0 2px #0a1330,5px 5px 0 #04081a;padding:22px;display:block;transition:transform .2s,filter .2s}
+.cards a:hover{transform:translateY(-3px);filter:brightness(1.15)}.cards b{display:block;font-family:'Pixelify Sans',sans-serif;font-size:20px;color:var(--gold);font-weight:400;margin:8px 0}.cards small{color:var(--muted);font-size:13px;line-height:1.6;display:block}
+.feature-num{font-size:11px;letter-spacing:1.5px;color:var(--gold)}
+.wrap{max-width:min(96vw,1900px);margin:0 auto;padding:36px 24px;display:grid;grid-template-columns:260px 1fr;gap:40px}
+aside{position:sticky;top:104px;align-self:start;max-height:calc(100vh - 124px);overflow:auto;font-size:13px;border:3px solid #2a3f66;background:#08112b;box-shadow:inset 0 0 0 2px #0a1330;padding:8px 10px}
+aside a{display:block;color:var(--muted);padding:3px 0 3px 12px;border-left:2px solid #2a3f66}aside a:hover,aside a.cur{color:var(--gold);border-color:var(--gold)}aside a.l3{padding-left:26px;font-size:12px}
+aside .grp{font-family:'Pixelify Sans',sans-serif;margin:12px 0 4px;padding:3px 8px;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#1a1004;background:linear-gradient(#ffd96e,#e9a93a);box-shadow:0 2px 0 #8a5a16}
+main{min-width:0;max-width:1100px}
+main h1{font-family:'Pixelify Sans',sans-serif;font-size:3.4rem;font-weight:400;line-height:1;margin:.1em 0 .3em;color:var(--gold);text-shadow:3px 3px 0 #04081a}
+main h1::after{content:"";display:block;width:70px;height:3px;background:var(--mint);margin-top:14px}
+main h2{margin-top:2.2em;padding-bottom:.25em;border-bottom:1px solid var(--line);font-size:1.7rem}main h3{margin-top:1.6em;font-size:1.25rem;color:var(--ice)}
+h2 .a,h3 .a{opacity:0;margin-left:.4em;color:var(--muted)}h2:hover .a,h3:hover .a{opacity:1}
+main a{color:var(--link);border-bottom:1px solid #7ff0cf40}main a:hover{border-color:var(--mint)}
+code{background:var(--code);padding:.12em .4em;border-radius:4px;font:13.5px ui-monospace,Menlo,Consolas,monospace;color:#a8f6ff}
+kbd{display:inline-block;min-width:1.6em;text-align:center;padding:.05em .45em;border:1px solid #5a6fa0;border-bottom-width:3px;border-radius:5px;background:#101e44;color:var(--gold);font:600 13px ui-monospace,Menlo,monospace}
+pre{background:var(--code);padding:14px 16px;border-radius:6px;overflow:auto;border:2px solid #2a3f66}pre code{padding:0;background:none}
+table{border-collapse:separate;border-spacing:0;display:block;overflow-x:auto;max-width:100%;margin:1.2em 0;border:2px solid #2a3f66}
+th,td{border-bottom:1px solid #1d3236;padding:8px 12px;text-align:left;vertical-align:top}tr:last-child td{border-bottom:0}
+th{font-family:'Pixelify Sans',sans-serif;background:#101e44;font-size:.9rem;letter-spacing:.06em;color:var(--gold);font-weight:400}tbody tr:nth-child(even){background:#0b1534}
+blockquote{margin:1.2em 0;padding:.9em 1.4em;border:3px solid #2a3f66;border-left:6px solid var(--gold);background:var(--panel);color:#c9d6ea}
+blockquote.tip{border-left-color:var(--mint)}blockquote.warn{border-left-color:#ff7b6b}blockquote.note{border-left-color:#7aa8ff}
+details.guide{border:3px solid #2a3f66;background:var(--panel);padding:10px 16px;margin:14px 0}details.guide>summary{cursor:pointer;font-weight:700;color:var(--mint)}
+.badge{display:inline-block;padding:.1em .6em;background:var(--mint);color:#0c2725;font-size:12px;font-weight:700}
+footer{padding:30px 5.5%;border-top:3px solid #1b2c58;background:#060a1c;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+footer .brand{font-size:17px}footer>span,footer small{font-size:10px;letter-spacing:1px;color:#7a8c9c}
+:focus-visible{outline:2px solid var(--mint);outline-offset:5px}
+@media(max-width:860px){header{height:auto;padding:12px 6%;flex-wrap:wrap}nav{order:3;width:100%}.nav-cta{display:none}.section{padding:50px 6%}.wrap{grid-template-columns:1fr}aside{display:none}main h1{font-size:2.6rem}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+</style></head><body><header><a class="brand" href="index.html"><span class="rune">ᛟ</span> KAGG2</a><nav aria-label="Main navigation"><a href="index.html" class=on>Home</a><a href="guide.html">Player guide</a><a href="manual.html">Manual</a><a href="developer-guide.html">Developer guide</a><a href="ai-guide.html">AI helper guide</a></nav><a class="nav-cta" href="guide.html">Start playing <span>ᚠ</span></a></header><section class="hero"><div class="eyebrow"><span></span>Bridge simulator · boarding FPS · Rust + macroquad<span></span></div>
+<h1>KAGG2</h1>
+<p>2347. The Concord of Earth has sent its Minions to burn Marsgard. You are Captain of the longship <em>Huginn</em>: fly the whale-road, break their ships, then board the wreck, axe in hand, and take the Concord's fleet codes.</p>
+<div class="actions"><a class="button" href="guide.html">Player guide <span>ᚠ</span></a><a class="button" href="manual.html">Manual <span>ᚢ</span></a></div></section>
+<section class="section"><div class="eyebrow"><span></span>Documentation<span></span></div><h2>Pick your road</h2>
+<div class="cards">
+<a href="guide.html"><span class="feature-num">01 · PLAY</span><b>Player guide</b><small>Install, first flight, the ten missions one by one, tactics for space and boarding, endings.</small></a>
+<a href="manual.html"><span class="feature-num">02 · REFERENCE</span><b>Manual</b><small>Every key, station panel, weapon, system, objective, setting, save file and command-line flag.</small></a>
+<a href="developer-guide.html"><span class="feature-num">03 · BUILD</span><b>Developer guide</b><small>Architecture, the 60 Hz sim, mission data format, how to add missions, keys and screens.</small></a>
+<a href="ai-guide.html"><span class="feature-num">04 · AGENTS</span><b>AI helper guide</b><small>Rules, commands, file map and recipes for AI coding agents working in this repository.</small></a>
+</div></section>
+<section class="section"><div class="eyebrow"><span></span>At a glance<span></span></div><h2>What is in the box</h2>
+<div class="cards">
+<a href="manual.html#stations"><span class="feature-num">SPACE</span><b>Seven stations</b><small>Helm, Weapons, Engineering, Damage, Science, Comms, Map. Crew AI can run any of them.</small></a>
+<a href="manual.html#boarding"><span class="feature-num">BOARD</span><b>Quake-2 style boarding</b><small>Generated levels, locked doors, six weapons, minion monsters, five objectives.</small></a>
+<a href="guide.html#the-campaign"><span class="feature-num">CAMPAIGN</span><b>Ten missions</b><small>Mars to Earth, a tutorial first, two endings. Save and continue.</small></a>
+<a href="developer-guide.html#determinism"><span class="feature-num">TECH</span><b>Headless, deterministic sim</b><small>Seeded RNG, fixed step, no macroquad in <code>src/sim</code>. Everything is generated: art and sound.</small></a>
+</div></section>
+<footer><a class="brand" href="index.html"><span class="rune">ᛟ</span> KAGG2</a><span>MARS VIKINGS AGAINST THE EARTH MINIONS</span><small>v0.30.0 · generated by tools/make_html.py: edit tools/html_src/*.html, not this file</small></footer></body></html>

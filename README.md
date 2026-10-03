@@ -1,11 +1,11 @@
-# Kagga2
+# Kagg2
 
 **Mars Vikings vs. Earth Minions.** Captain the longship *Huginn* through a simplified
 bridge-sim space war (inspired by *Space Nerds In Space*), then storm disabled enemy ships and
 bases in first-person boarding actions (inspired by *Quake 2*). Written in Rust. Single player
 first; multiplayer is an optional future goal.
 
-> Status: T01–T24 done (M0 foundation, M1 space: flight/combat/stations/nav/comms/starbases/audio, M2 boarding: Quake-2-style FPS actions); building task by task — see [tasks.md](tasks.md).
+> Status: T01–T29 done (M0 foundation, M1 space, M2 boarding, M3 campaign: 10 missions, save/settings, tutorial/help); building task by task — see [tasks.md](tasks.md).
 
 ## Run
 ```sh

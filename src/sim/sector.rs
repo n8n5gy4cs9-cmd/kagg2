@@ -45,14 +45,14 @@ impl SectorId {
         }
     }
 
-    /// Sector flown in campaign mission `mission` (1-based; placeholder routing until T25).
+    /// Sector flown in campaign mission `mission` (1-based, see `STORY.md`).
     pub fn for_mission(mission: u8) -> SectorId {
         match mission {
             0 | 1 => SectorId::MarsOrbit,
-            2 => SectorId::Phobos,
-            3 | 4 => SectorId::Belt,
-            5 | 6 => SectorId::Jupiter,
-            7 | 8 => SectorId::Luna,
+            2 | 5 => SectorId::Phobos,
+            3 | 4 | 7 => SectorId::Belt,
+            6 => SectorId::Jupiter,
+            8 | 9 => SectorId::Luna,
             _ => SectorId::EarthOrbit,
         }
     }
@@ -245,7 +245,13 @@ fn orbit_to(w: &mut World, id: EntityId, center: EntityId, speed: f32) {
     }
 }
 
-fn ship(w: &mut World, label: &'static str, class: ShipClass, pos: Vec3, rot_y: f32) -> EntityId {
+pub(crate) fn ship(
+    w: &mut World,
+    label: &'static str,
+    class: ShipClass,
+    pos: Vec3,
+    rot_y: f32,
+) -> EntityId {
     let mut e = Entity::new(Kind::Ship, label, class.model, class.texture, class.radius);
     e.pos = pos;
     e.rot = glam::Quat::from_rotation_y(rot_y);

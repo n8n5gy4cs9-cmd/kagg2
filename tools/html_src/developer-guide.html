@@ -1,0 +1,84 @@
+<h1>Developer guide</h1>
+<p>How Kagg2 is built and how to extend it. Companion files in the repository: <code>ARCHITECTURE.md</code>, <code>GAME_DESIGN.md</code>, <code>PLAN.md</code>, <code>ASSETS.md</code>, <code>tasks.md</code>, <code>HANDOFF.md</code>.</p>
+<h2>Build and run</h2>
+<pre><code>cargo check                              # after every edit batch
+cargo clippy --all-targets -- -D warnings
+cargo test --release                     # 111+ tests, headless
+cargo fmt
+./run.sh                                 # release build + game
+cargo run --release --bin texgen         # regenerate assets/textures (committed)</code></pre>
+<p>The crate is <code>kagg2</code> (edition 2024, <code>default-run = "kagg2"</code>); dependencies are macroquad (with <code>audio</code>), png and glam. <code>.cargo/config.toml</code> sets <code>target-cpu=apple-m1</code> on <code>aarch64-apple-darwin</code> only.</p>
+<h2>Source map</h2>
+<table><thead><tr><th>Path</th><th>Role</th></tr></thead><tbody>
+<tr><td><code>src/main.rs</code></td><td>window, CLI flags, the frame loop, state wiring, save/settings use</td></tr>
+<tr><td><code>src/app.rs</code></td><td>pure state machine: <code>AppState</code>, <code>AppEvent</code>, <code>Menu</code></td></tr>
+<tr><td><code>src/story.rs</code></td><td>briefings, saga verses, endings (text only)</td></tr>
+<tr><td><code>src/save.rs</code></td><td><code>Settings</code>, <code>SaveGame</code>, <code>Difficulty</code>; text format, file IO</td></tr>
+<tr><td><code>src/sim/</code></td><td>headless space simulation (never imports macroquad)</td></tr>
+<tr><td><code>src/board/</code></td><td>headless boarding simulation (level generator, pmove, monsters, weapons)</td></tr>
+<tr><td><code>src/audio/synth.rs</code></td><td>headless synthesiser for SFX and music</td></tr>
+<tr><td><code>src/gfx/</code></td><td>macroquad rendering and input: scenes, HUD, panels, screens, <code>keys.rs</code>, <code>help.rs</code>, <code>settings_ui.rs</code></td></tr>
+<tr><td><code>src/texgen/</code>, <code>src/meshgen/</code></td><td>procedural textures and 3D models</td></tr>
+</tbody></table>
+<h2 id="determinism">Determinism rules</h2>
+<ul><li>The sim runs at a fixed 60 Hz (<code>sim::clock</code>). Same seed plus same commands gives the same <code>World::state_hash</code>.</li><li>Randomness comes only from <code>sim::rng::Rng</code> (xoshiro256**). No wall clock, no <code>HashMap</code> iteration in <code>src/sim</code>.</li><li>Mission timers use <code>World::time</code>, never real time.</li><li>Nothing under <code>src/sim</code> or <code>src/board</code> may import <code>macroquad</code>.</li></ul>
+<h2>The sim step</h2>
+<p><code>World::step(&amp;[Addressed]) -&gt; Vec&lt;Event&gt;</code>: controllers (AI, crew, autopilot) produce commands, commands apply, orbits move, missiles steer, ships integrate (docked ships are held), projectiles collide, upkeep runs, solid collisions resolve. Inputs are <code>Command</code>s addressed to a ship; outputs are <code>Event</code>s that the scene turns into effects, sound and mission progress.</p>
+<h2>App flow</h2>
+<pre><code>Boot -> MainMenu -> Briefing{m} -> Space{m} <-> Boarding{m} -> Debrief{m, won}
+MainMenu -> Settings | Help          Debrief(win, m=10) -> Ending{chosen} -> MainMenu
+Debrief(win) -> Briefing{m+1}        Debrief(loss) -> Briefing{m} (retry)</code></pre>
+<p>Only <code>AppState::next(AppEvent)</code> changes state. <code>main.rs</code> reads input per state, produces an event, and performs side effects around the transition (create the scene, save the game, rebuild the menu).</p>
+<h2 id="mission-engine">Mission engine (<code>src/sim/mission.rs</code>)</h2>
+<p>A mission is static data: <code>Mission { stages: &amp;[Stage] }</code>, looked up with <code>mission::def(id)</code>.</p>
+<table><thead><tr><th>Type</th><th>Meaning</th></tr></thead><tbody>
+<tr><td><code>Stage</code></td><td><code>text</code> (HUD objective, under 80 chars), <code>goal</code>, <code>beats</code>, <code>protect: Option&lt;(prefix, message)&gt;</code>, <code>limit</code> seconds (0 = none)</td></tr>
+<tr><td><code>Goal</code></td><td><code>Throttle, Target, Reach, DockAt, Scan, Cargo, Upgrade, Wait, Clear, ClearBut, Gone, Disabled, Board, Escort</code></td></tr>
+<tr><td><code>Beat</code></td><td>an <code>Act</code> at <code>at</code> seconds after the stage starts: <code>Say(speaker, text)</code> or <code>Spawn(Spawn)</code></td></tr>
+<tr><td><code>Spawn</code></td><td>anchor (<code>Player</code>, in the player's frame; or <code>Body(label)</code>), offset, <code>Role</code> (<code>Attack, Patrol, Drone, Ally, Hauler</code>), class names, optional label override</td></tr>
+<tr><td><code>MissionState</code></td><td>runtime: stage index, start time, next beat, notes, result. <code>begin</code>, <code>update(world, events)</code>, <code>on_boarding</code>, <code>board_wanted</code>, <code>take_notes</code>, <code>result</code></td></tr>
+<tr><td><code>Carry</code></td><td>credits and upgrade levels carried between missions</td></tr>
+</tbody></table>
+<p>Rules of the engine: stock sector enemies are removed in <code>begin</code>; a stage whose goal needs spawns (<code>Clear</code>, <code>ClearBut</code>, <code>Gone</code>, <code>Disabled</code>, <code>Escort</code>) waits until all its beats have fired; goals are checked every 6th tick; a <code>Destroyed</code> event whose label starts with the stage's protect prefix fails the mission; the player's death fails it from the scene.</p>
+<h3>Add a mission stage</h3>
+<pre><code>static M3: [Stage; 2] = [
+    stage("MINE 6 ORE - TARGET A BIG ROCK (T), PRESS K",
+          Goal::Cargo { commodity: 0, qty: 6 },
+          &amp;[say(0.0, INGRID, "Load the hold first.")]),
+    guarded(
+        stage("CRIPPLE THE COURIER", Goal::Disabled("Courier"),
+              &amp;[spawn(0.0, Player, [-1500.0, 100.0, -3500.0], Role::Attack,
+                      &amp;["cutter"], Some("Courier"))]),
+        "Courier", "THE COURIER WAS DESTROYED"),
+];</code></pre>
+<p>To add a whole mission: add a <code>static Mn</code>, put it in <code>MISSIONS</code> (and raise <code>app::MISSION_COUNT</code>), add a <code>Briefing</code> and a verse pair in <code>story.rs</code>, route its sector in <code>SectorId::for_mission</code>. The test <code>every_mission_is_defined_and_references_real_bodies</code> checks that bodies named in goals and spawns exist in the sector.</p>
+<h3>Add a goal kind</h3>
+<p>Add a variant to <code>Goal</code>, handle it in <code>MissionState::goal_met</code>, decide whether it needs <code>beats_done</code>, and add a test using <code>started(mission)</code> and <code>run(...)</code> from the test module.</p>
+<h3>Boarding hooks</h3>
+<p><code>SpaceScene::boardable()</code> asks <code>MissionState::board_wanted(label)</code>; if the stage demands an objective it is put in <code>BoardInfo.force</code> and the objective screen shows only that. After the action <code>apply_boarding</code> calls <code>on_boarding(label, objective, won &amp;&amp; objective_done)</code>. Level themes by label are chosen in <code>boardable()</code> (Prison Barge, Courier).</p>
+<h2>Scene integration</h2>
+<p><code>SpaceScene::start_mission(id, &amp;Carry, difficulty)</code> sets <code>world.difficulty</code>, applies the carry, creates and begins the <code>MissionState</code>. Each fixed step: <code>world.step</code>, then <code>mission.update</code>, then events are handled. Notes (<code>Note { who, text }</code>) become 7-second captions; empty-speaker notes become messages. <code>outcome()</code> returns <code>Some(won)</code> 3 seconds after the mission is decided, or <code>Some(false)</code> when the ship has been dead 4 seconds.</p>
+<h2>Settings, bindings and saves</h2>
+<ul>
+<li><code>gfx/keys.rs</code>: <code>Bind</code> enum (26 actions), <code>Bindings</code> (default keys, <code>get/set/conflicts</code>, text lines), a table of bindable keys. <code>SpaceScene</code> clones the bindings per frame and reads <code>kb(Bind::X)</code>.</li>
+<li><code>save.rs</code>: formats are plain lines with a version header (<code>kagg2-settings 1</code>, <code>kagg2-save 1</code>). Parsing is tolerant: unknown lines ignored, values clamped. To add a setting: add a field, write it in <code>to_text</code>, read it in <code>from_text</code>, show a row in <code>settings_ui.rs</code>, apply it in <code>main.rs</code>. Bump the header version only for incompatible changes.</li>
+<li><code>settings_ui.rs</code>: rows 0 to 4 are fixed settings, then one row per <code>Bind</code>, then Reset and Back.</li>
+</ul>
+<h2>Add a rebindable key</h2>
+<p>Add a <code>Bind</code> variant, put it in <code>Bind::ALL</code> (and bump the array length in <code>Bindings</code>), give it a <code>name</code> and <code>default_key</code>, then replace the hardcoded key in <code>space_scene.rs</code> with <code>kb(Bind::New)</code>. The key table in <code>keys.rs</code> must contain the default key (a test checks it).</p>
+<h2>Add a help page</h2>
+<p><code>gfx/help.rs</code>: station text is in <code>station(Tab)</code> (first line is the title); menu pages come from <code>pages()</code>. Keep lines under about 60 characters; the pixel font is upper case.</p>
+<h2>Add content elsewhere</h2>
+<table><thead><tr><th>Want</th><th>Where</th></tr></thead><tbody>
+<tr><td>New ship class</td><td><code>sim/flight.rs</code> (class constant), <code>ops::class_stats</code>, <code>ai::class_of</code> if Minion, mesh in <code>meshgen/ships.rs</code>, texture in <code>texgen/ships.rs</code></td></tr>
+<tr><td>New sector</td><td><code>SectorId</code> in <code>sim/sector.rs</code> (name, parse, helio, host), a <code>new_game</code> arm, station factions</td></tr>
+<tr><td>New command</td><td><code>sim/command.rs</code>, handle in <code>combat::handle</code> or <code>nav::handle</code>, send from <code>space_scene.rs</code></td></tr>
+<tr><td>New boarding objective</td><td><code>board/level.rs</code> (<code>Objective</code>, <code>for_theme</code>, generator), <code>board/world.rs</code> (progress logic)</td></tr>
+<tr><td>New texture or model</td><td>generate it in <code>texgen</code> / <code>meshgen</code>; never copy art from <code>REFERENCE_tobe_DELETED/</code></td></tr>
+</tbody></table>
+<h2>Tests</h2>
+<p>Headless unit tests live next to the code. Useful helpers: <code>mission::tests::started/run</code>, <code>combat::tests::spawn_ship</code>, <code>sector::new_game(seed, sector)</code>. Scene tests in <code>space_scene.rs</code> build a <code>SpaceScene</code> without a window (no drawing). Determinism tests compare <code>state_hash</code> of two runs.</p>
+<h2>Docs and versioning</h2>
+<p>After a task: update <code>tasks.md</code> (move the line to Done), <code>HANDOFF.md</code>, and whichever of <code>GAME_DESIGN.md</code>, <code>ARCHITECTURE.md</code>, <code>ASSETS.md</code>, <code>PRD.json</code> the change touched, then rebuild these pages with <code>python3 tools/make_html.py</code>. Bump <code>Cargo.toml</code> version: minor per finished task, patch per fix. Never edit <code>Cargo.lock</code> by hand.</p>
+<h2>Known gaps</h2>
+<ul><li>Warp gates are not built; mission 6 is a plain blockade.</li><li>Minion stations are inert targets (no turrets, not boardable).</li><li>Warping mid-mission rebuilds the sector and loses mission spawns.</li><li>The mission balance (spawn offsets, wave sizes, mission 8's 420 s) has not been tuned by a bot yet (T30).</li></ul>

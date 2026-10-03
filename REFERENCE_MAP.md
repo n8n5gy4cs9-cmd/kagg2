@@ -1,12 +1,12 @@
-# Reference → Kagga2 map
+# Reference → Kagg2 map
 
 "Clone into Rust" = re-implement the logic/data in idiomatic Rust, not transliterate C.
 References live in `REFERENCE_tobe_DELETED/` (read-only; deleted at T31 on request).
-Licences: both GPL-2.0-or-later → Kagga2 is GPL-2.0-or-later (see `CREDITS.md`).
+Licences: both GPL-2.0-or-later → Kagg2 is GPL-2.0-or-later (see `CREDITS.md`).
 
 ## Space-Nerds-in-Space (`space-nerds-in-space-master/`)
 
-| Reference | Kagga2 module | Take | Skip |
+| Reference | Kagg2 module | Take | Skip |
 |---|---|---|---|
 | `share/snis/ship_types.txt`, `snis_ship_type.c` | `sim/space/ship_class.rs` | class table: toughness, max speed, weapons, cargo, crew | 40 classes → ~14 |
 | `power-model.c/.h` | `sim/space/power.rs` | power/coolant/temperature per system, overheat damage | exact constants (rebalanced) |
@@ -28,7 +28,7 @@ Licences: both GPL-2.0-or-later → Kagga2 is GPL-2.0-or-later (see `CREDITS.md`
 
 ## Quake 2 (`Quake-2-master/`, code only — no maps/art in the repo)
 
-| Reference | Kagga2 module | Take | Skip |
+| Reference | Kagg2 module | Take | Skip |
 |---|---|---|---|
 | `qcommon/pmove.c` (movement physics) | `sim/board/pmove.rs` | accelerate, friction, stopspeed, air accel, jump, crouch, slide-move | BSP trace → grid AABB |
 | `game/g_ai.c`, `g_monster.c`, `m_move.c` | `sim/board/monster.rs` | `ai_stand/walk/run/charge`, visibility, `M_walkmove`, step-up, `FindTarget`, pain/die flow | animation frame tables |

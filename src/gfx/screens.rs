@@ -70,35 +70,103 @@ pub fn draw_briefing(mission: u8) {
     let h = screen_height();
     centered(
         &format!("Mission {mission} of {MISSION_COUNT}"),
-        h * 0.25,
+        h * 0.18,
         28.0,
         DIM,
     );
     match story::briefing(mission) {
-        Some(lines) => {
-            centered(lines[0], h * 0.25 + 60.0, 48.0, RUST);
-            centered(lines[1], h * 0.25 + 120.0, 24.0, BONE);
-            centered(lines[2], h * 0.25 + 150.0, 24.0, BONE);
+        Some(b) => {
+            centered(b.title, h * 0.18 + 60.0, 52.0, RUST);
+            centered(b.place, h * 0.18 + 92.0, 24.0, DIM);
+            for (i, line) in b.lines.iter().enumerate() {
+                centered(line, h * 0.18 + 150.0 + i as f32 * 32.0, 26.0, BONE);
+            }
         }
-        None => centered("Briefing not written yet.", h * 0.25 + 60.0, 32.0, BONE),
+        None => centered("Briefing not written yet.", h * 0.18 + 60.0, 32.0, BONE),
     }
-    centered("Press Enter to launch", h * 0.80, 26.0, DIM);
+    centered(
+        "Press Enter to launch  -  Esc for the menu",
+        h * 0.88,
+        24.0,
+        DIM,
+    );
 }
 
-/// Stand-in for the space and boarding scenes until T05 / T18 exist.
-pub fn draw_placeholder(title: &str, hint: &str) {
-    let h = screen_height();
-    centered(title, h * 0.40, 48.0, RUST);
-    centered(hint, h * 0.40 + 50.0, 24.0, BONE);
-}
-
-pub fn draw_debrief(mission: u8, won: bool) {
+/// Debrief: result, saga verse and (after a loss) why.
+pub fn draw_debrief(mission: u8, won: bool, reason: &str) {
     let h = screen_height();
     let (head, color) = if won {
         ("Victory", RUST)
     } else {
         ("Defeat", DIM)
     };
-    centered(&format!("Mission {mission}: {head}"), h * 0.40, 56.0, color);
-    centered("Press Enter to continue", h * 0.40 + 60.0, 24.0, BONE);
+    centered(&format!("Mission {mission}: {head}"), h * 0.34, 56.0, color);
+    if !won && !reason.is_empty() {
+        centered(reason, h * 0.34 + 44.0, 24.0, BONE);
+    }
+    centered(story::verse(mission, won), h * 0.34 + 110.0, 28.0, BONE);
+    centered("Press Enter to continue", h * 0.80, 24.0, DIM);
+}
+
+/// Ending choice (`chosen == 0`) or epilogue for the chosen ending.
+pub fn draw_ending(chosen: u8) {
+    let h = screen_height();
+    match story::Ending::from_code(chosen) {
+        None => {
+            centered(
+                "Prefect Voss is dead. The fleet codes are yours.",
+                h * 0.28,
+                34.0,
+                RUST,
+            );
+            centered(
+                "1  Break the Armada - destroy the codes, make an uneasy peace",
+                h * 0.45,
+                28.0,
+                BONE,
+            );
+            centered(
+                "2  Take the Throne - use the codes, Mars rules",
+                h * 0.45 + 50.0,
+                28.0,
+                BONE,
+            );
+            centered("Press 1 or 2", h * 0.85, 24.0, DIM);
+        }
+        Some(e) => {
+            centered("EPILOGUE", h * 0.22, 48.0, RUST);
+            for (i, line) in e.epilogue().iter().enumerate() {
+                centered(line, h * 0.36 + i as f32 * 34.0, 26.0, BONE);
+            }
+            centered(
+                "Kagg2 - generated art, procedural sound. Thank you for playing.",
+                h * 0.78,
+                22.0,
+                DIM,
+            );
+            centered("Press Enter for the menu", h * 0.86, 24.0, DIM);
+        }
+    }
+}
+
+/// Main-menu Help screen: one page of `help::pages()`.
+pub fn draw_help(page: usize) {
+    let pages = super::help::pages();
+    let h = screen_height();
+    let p = &pages[page.min(pages.len() - 1)];
+    centered("HELP", h * 0.12, 44.0, RUST);
+    centered(p.title, h * 0.12 + 50.0, 30.0, BONE);
+    for (i, line) in p.lines.iter().enumerate() {
+        centered(line, h * 0.34 + i as f32 * 30.0, 24.0, BONE);
+    }
+    centered(
+        &format!(
+            "Page {}/{}  -  Left/Right to turn, Esc to return",
+            page + 1,
+            pages.len()
+        ),
+        h * 0.9,
+        22.0,
+        DIM,
+    );
 }

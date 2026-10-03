@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Manual — Kagg2</title><meta name="description" content="Kagg2: Mars Vikings against the Earth Minions. A bridge-simulator and boarding-FPS campaign.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%237ff0cf' d='M16 2l5 9h-4v5l6-4v5l-6 4v9h-2v-9l-6-4v-5l6 4v-5h-4z'/%3E%3C/svg%3E">
+<style>@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Pixelify+Sans:wght@400;600&display=swap');
+:root{--bg:#070b1e;--bg2:#0b1430;--panel:#0d1730;--ink:#eaf2f6;--mint:#3df2b0;--gold:#ffcf5a;--ice:#5fe0ff;--muted:#9aaac0;--line:#2a3f66;--code:#08102a;--link:#7be8ff}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:90px}
+body{margin:0;background:radial-gradient(ellipse at 50% -10%,#16286055,transparent 60%),var(--bg);color:var(--ink);font:16px/1.7 'Space Grotesk',system-ui,Arial,sans-serif}
+a{color:inherit;text-decoration:none}button{font:inherit;cursor:pointer}
+header{height:84px;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:0 5.5%;background:#060a1cf2;border-bottom:3px solid #1b2c58;box-shadow:0 3px 0 #0003;position:sticky;top:0;z-index:20;backdrop-filter:blur(8px)}
+.brand{font-family:'Pixelify Sans','Space Grotesk',sans-serif;font-size:22px;font-weight:700;letter-spacing:3px;display:flex;align-items:center;gap:12px;white-space:nowrap;color:var(--gold);text-shadow:2px 2px 0 #04081a}
+.rune{font-size:32px;color:var(--ice);line-height:1}
+nav{font-family:'Pixelify Sans','Space Grotesk',sans-serif;display:flex;flex-wrap:wrap;gap:4px 18px;font-size:14px;color:#b5c3dc}
+nav a{padding:4px 0;border-bottom:3px solid transparent}nav a:hover{color:var(--gold)}nav a.on{color:var(--gold);border-color:var(--gold)}
+.nav-cta,.button{font-family:'Pixelify Sans',sans-serif;background:linear-gradient(#ffd96e,#e9a93a);color:#2a1706;border:0;box-shadow:0 4px 0 #8a5a16,0 0 0 3px #2a1706,0 0 0 5px #ffcf5a60;letter-spacing:.5px;padding:11px 18px;font-size:14px;display:inline-flex;gap:18px;white-space:nowrap}
+.nav-cta span,.button span{color:#7a4a10}.button:hover,.nav-cta:hover{transform:translateY(-2px);filter:brightness(1.08)}
+.hero{position:relative;overflow:hidden;padding:90px 6% 80px;text-align:center;background:radial-gradient(ellipse 60% 70% at 50% 30%,#1c3a7a66,transparent 70%),#050a1c;border-bottom:3px solid #1b2c58}
+.hero:before{content:"";position:absolute;inset:0;background-image:radial-gradient(#fff 1px,transparent 1px),radial-gradient(#9ec9ff 1px,transparent 1px);background-size:90px 90px,140px 140px;background-position:0 0,40px 60px;opacity:.25}
+.hero>*{position:relative}
+.eyebrow{font-family:'Pixelify Sans',sans-serif;font-size:12px;letter-spacing:2px;color:var(--ice);display:flex;align-items:center;justify-content:center;gap:10px;text-transform:uppercase}
+.eyebrow span{width:5px;height:5px;background:var(--gold)}
+.hero h1{font-family:'Pixelify Sans',sans-serif;font-size:clamp(60px,9vw,120px);font-weight:600;line-height:.95;letter-spacing:2px;margin:22px 0 18px;color:var(--gold);text-shadow:4px 5px 0 #04081a}
+.hero p{max-width:640px;margin:0 auto 22px;color:#d3def0;font-size:16px}
+.actions{display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin-top:26px}
+.section{max-width:1240px;margin:auto;padding:70px 40px}
+h2{font-family:'Pixelify Sans',sans-serif;font-weight:400;font-size:38px;line-height:1.15;margin:15px 0 0}
+h3{font-family:'Pixelify Sans',sans-serif;font-weight:400;font-size:24px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;margin-top:30px}
+.cards a{border:3px solid #2a3f66;background:var(--panel);box-shadow:inset 0 0 0 2px #0a1330,5px 5px 0 #04081a;padding:22px;display:block;transition:transform .2s,filter .2s}
+.cards a:hover{transform:translateY(-3px);filter:brightness(1.15)}.cards b{display:block;font-family:'Pixelify Sans',sans-serif;font-size:20px;color:var(--gold);font-weight:400;margin:8px 0}.cards small{color:var(--muted);font-size:13px;line-height:1.6;display:block}
+.feature-num{font-size:11px;letter-spacing:1.5px;color:var(--gold)}
+.wrap{max-width:min(96vw,1900px);margin:0 auto;padding:36px 24px;display:grid;grid-template-columns:260px 1fr;gap:40px}
+aside{position:sticky;top:104px;align-self:start;max-height:calc(100vh - 124px);overflow:auto;font-size:13px;border:3px solid #2a3f66;background:#08112b;box-shadow:inset 0 0 0 2px #0a1330;padding:8px 10px}
+aside a{display:block;color:var(--muted);padding:3px 0 3px 12px;border-left:2px solid #2a3f66}aside a:hover,aside a.cur{color:var(--gold);border-color:var(--gold)}aside a.l3{padding-left:26px;font-size:12px}
+aside .grp{font-family:'Pixelify Sans',sans-serif;margin:12px 0 4px;padding:3px 8px;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#1a1004;background:linear-gradient(#ffd96e,#e9a93a);box-shadow:0 2px 0 #8a5a16}
+main{min-width:0;max-width:1100px}
+main h1{font-family:'Pixelify Sans',sans-serif;font-size:3.4rem;font-weight:400;line-height:1;margin:.1em 0 .3em;color:var(--gold);text-shadow:3px 3px 0 #04081a}
+main h1::after{content:"";display:block;width:70px;height:3px;background:var(--mint);margin-top:14px}
+main h2{margin-top:2.2em;padding-bottom:.25em;border-bottom:1px solid var(--line);font-size:1.7rem}main h3{margin-top:1.6em;font-size:1.25rem;color:var(--ice)}
+h2 .a,h3 .a{opacity:0;margin-left:.4em;color:var(--muted)}h2:hover .a,h3:hover .a{opacity:1}
+main a{color:var(--link);border-bottom:1px solid #7ff0cf40}main a:hover{border-color:var(--mint)}
+code{background:var(--code);padding:.12em .4em;border-radius:4px;font:13.5px ui-monospace,Menlo,Consolas,monospace;color:#a8f6ff}
+kbd{display:inline-block;min-width:1.6em;text-align:center;padding:.05em .45em;border:1px solid #5a6fa0;border-bottom-width:3px;border-radius:5px;background:#101e44;color:var(--gold);font:600 13px ui-monospace,Menlo,monospace}
+pre{background:var(--code);padding:14px 16px;border-radius:6px;overflow:auto;border:2px solid #2a3f66}pre code{padding:0;background:none}
+table{border-collapse:separate;border-spacing:0;display:block;overflow-x:auto;max-width:100%;margin:1.2em 0;border:2px solid #2a3f66}
+th,td{border-bottom:1px solid #1d3236;padding:8px 12px;text-align:left;vertical-align:top}tr:last-child td{border-bottom:0}
+th{font-family:'Pixelify Sans',sans-serif;background:#101e44;font-size:.9rem;letter-spacing:.06em;color:var(--gold);font-weight:400}tbody tr:nth-child(even){background:#0b1534}
+blockquote{margin:1.2em 0;padding:.9em 1.4em;border:3px solid #2a3f66;border-left:6px solid var(--gold);background:var(--panel);color:#c9d6ea}
+blockquote.tip{border-left-color:var(--mint)}blockquote.warn{border-left-color:#ff7b6b}blockquote.note{border-left-color:#7aa8ff}
+details.guide{border:3px solid #2a3f66;background:var(--panel);padding:10px 16px;margin:14px 0}details.guide>summary{cursor:pointer;font-weight:700;color:var(--mint)}
+.badge{display:inline-block;padding:.1em .6em;background:var(--mint);color:#0c2725;font-size:12px;font-weight:700}
+footer{padding:30px 5.5%;border-top:3px solid #1b2c58;background:#060a1c;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+footer .brand{font-size:17px}footer>span,footer small{font-size:10px;letter-spacing:1px;color:#7a8c9c}
+:focus-visible{outline:2px solid var(--mint);outline-offset:5px}
+@media(max-width:860px){header{height:auto;padding:12px 6%;flex-wrap:wrap}nav{order:3;width:100%}.nav-cta{display:none}.section{padding:50px 6%}.wrap{grid-template-columns:1fr}aside{display:none}main h1{font-size:2.6rem}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+</style></head><body><header><a class="brand" href="index.html"><span class="rune">ᛟ</span> KAGG2</a><nav aria-label="Main navigation"><a href="index.html">Home</a><a href="guide.html">Player guide</a><a href="manual.html" class=on>Manual</a><a href="developer-guide.html">Developer guide</a><a href="ai-guide.html">AI helper guide</a></nav><a class="nav-cta" href="guide.html">Start playing <span>ᚠ</span></a></header><div class="wrap"><aside><div class="grp">On this page</div><a class="l2" href="#running-and-options">Running and options</a><a class="l2" href="#menus-and-screens">Menus and screens</a><a class="l2" href="#flight-controls">Flight controls</a><a class="l2" href="#stations">Stations</a><a class="l3" href="#f1-helm">F1 Helm</a><a class="l3" href="#f2-weapons">F2 Weapons</a><a class="l3" href="#f3-engineering">F3 Engineering</a><a class="l3" href="#f4-damage-control">F4 Damage control</a><a class="l3" href="#f5-science">F5 Science</a><a class="l3" href="#f6-comms">F6 Comms</a><a class="l3" href="#f7-map">F7 Map</a><a class="l3" href="#crew-auto">Crew AUTO</a><a class="l2" href="#ships-and-enemies">Ships and enemies</a><a class="l2" href="#sectors">Sectors</a><a class="l2" href="#starbases">Starbases</a><a class="l2" href="#boarding-actions">Boarding actions</a><a class="l3" href="#levels">Levels</a><a class="l3" href="#weapons">Weapons</a><a class="l3" href="#monsters-hit-points">Monsters (hit points)</a><a class="l3" href="#after-a-boarding">After a boarding</a><a class="l2" href="#settings-and-save-files">Settings and save files</a><a class="l2" href="#troubleshooting">Troubleshooting</a></aside><main><h1>Manual</h1>
+<p>Reference for everything in Kagg2 v0.30. For a guided start see the <a href="guide.html">player guide</a>.</p>
+<h2 id="running-and-options">Running and options<a class="a" href="#running-and-options">#</a></h2>
+<pre><code>./run.sh                    normal game (main menu)
+./run.sh fight [sector]     jump into a sector with enemies attacking (default mars)
+./run.sh dock  [sector]     start docked at the first friendly starbase
+./run.sh board [1-4] [size] boarding level: 1 corvette 2 station 3 prison barge 4 dreadnought, size 1-5
+./run.sh tab N [sector]     open station tab N (1 helm .. 7 map)
+./run.sh sector NAME        fly a sector: mars phobos belt jupiter luna earth
+./run.sh viewer [model]     model viewer
+./run.sh test               fmt check, clippy, tests
+./run.sh shot OUT.png [..]  save a screenshot and exit</code></pre>
+<p>These developer shortcuts start free flight without a mission. Extra flags for the binary: <code>--chase</code>, <code>--target</code>, <code>--fire</code>, <code>--throttle F</code>, <code>--pos x,y,z --look x,y,z</code>, <code>--frames N</code>. Environment: <code>KAGG2_HOME</code> (where settings and saves go), <code>KAGGA_FPS=1</code> (FPS counter), <code>KAGGA_DEV=1</code> (F9 completes the current mission).</p>
+<h2 id="menus-and-screens">Menus and screens<a class="a" href="#menus-and-screens">#</a></h2>
+<table><thead><tr><th>Screen</th><th>Keys</th></tr></thead><tbody>
+<tr><td>Main menu</td><td><kbd>Up</kbd>/<kbd>Down</kbd> or <kbd>W</kbd>/<kbd>S</kbd>, <kbd>Enter</kbd> or mouse; <kbd>Esc</kbd> quits</td></tr>
+<tr><td>Briefing</td><td><kbd>Enter</kbd> launch, <kbd>Esc</kbd> menu</td></tr>
+<tr><td>Debrief</td><td><kbd>Enter</kbd> continue (next mission after a win, retry after a loss)</td></tr>
+<tr><td>Ending</td><td><kbd>1</kbd> or <kbd>2</kbd> to choose, then <kbd>Enter</kbd></td></tr>
+<tr><td>Help</td><td><kbd>Left</kbd>/<kbd>Right</kbd> pages, <kbd>Esc</kbd> back</td></tr>
+<tr><td>Settings</td><td><kbd>Up</kbd>/<kbd>Down</kbd> select, <kbd>Left</kbd>/<kbd>Right</kbd> change, <kbd>Enter</kbd> rebind or activate, <kbd>Esc</kbd> save and return</td></tr>
+</tbody></table>
+<h2 id="flight-controls">Flight controls<a class="a" href="#flight-controls">#</a></h2>
+<p>These are the defaults; all rows marked <em>rebindable</em> can be changed in Settings.</p>
+<table><thead><tr><th>Action</th><th>Default</th><th>Rebindable</th></tr></thead><tbody>
+<tr><td>Throttle up / down</td><td><kbd>W</kbd> / <kbd>S</kbd></td><td>yes</td></tr>
+<tr><td>Full / zero throttle</td><td><kbd>Left Shift</kbd> / <kbd>X</kbd></td><td>yes</td></tr>
+<tr><td>Yaw left / right</td><td><kbd>A</kbd> / <kbd>D</kbd></td><td>yes</td></tr>
+<tr><td>Pitch up / down</td><td>arrow up / down</td><td>yes (and Invert Y)</td></tr>
+<tr><td>Roll left / right</td><td><kbd>Q</kbd> / <kbd>E</kbd></td><td>yes</td></tr>
+<tr><td>Strafe left / right</td><td>arrow left / right</td><td>yes</td></tr>
+<tr><td>Strafe up / down</td><td><kbd>R</kbd> / <kbd>F</kbd></td><td>yes</td></tr>
+<tr><td>Brake</td><td><kbd>Space</kbd></td><td>yes</td></tr>
+<tr><td>Fire lances</td><td><kbd>Enter</kbd> or left click on the Helm tab</td><td>key yes</td></tr>
+<tr><td>Torpedo / missile</td><td><kbd>Z</kbd> / <kbd>V</kbd></td><td>yes</td></tr>
+<tr><td>Next target / clear</td><td><kbd>T</kbd> / <kbd>G</kbd></td><td>yes</td></tr>
+<tr><td>Board ship</td><td><kbd>B</kbd></td><td>yes</td></tr>
+<tr><td>Dock / undock</td><td><kbd>L</kbd></td><td>yes</td></tr>
+<tr><td>Autopilot</td><td><kbd>P</kbd></td><td>yes</td></tr>
+<tr><td>Scan target</td><td><kbd>N</kbd></td><td>yes</td></tr>
+<tr><td>Camera (cockpit/chase)</td><td><kbd>C</kbd></td><td>yes</td></tr>
+<tr><td>Flight assist</td><td><kbd>M</kbd></td><td>yes</td></tr>
+<tr><td>Go to target (autopilot)</td><td><kbd>O</kbd></td><td>no</td></tr>
+<tr><td>Long-range sweep</td><td><kbd>U</kbd></td><td>no</td></tr>
+<tr><td>Mine targeted asteroid</td><td><kbd>K</kbd></td><td>no</td></tr>
+<tr><td>Lance frequency</td><td><kbd>[</kbd> <kbd>]</kbd></td><td>no</td></tr>
+<tr><td>Shield frequency</td><td><kbd>,</kbd> <kbd>.</kbd></td><td>no</td></tr>
+<tr><td>Stations</td><td><kbd>F1</kbd>–<kbd>F7</kbd></td><td>no</td></tr>
+<tr><td>Crew AUTO for the open station</td><td><kbd>Tab</kbd></td><td>no</td></tr>
+<tr><td>Station help overlay</td><td><kbd>F8</kbd></td><td>no</td></tr>
+<tr><td>Volume / music</td><td><kbd>-</kbd> <kbd>=</kbd> / <kbd>F11</kbd></td><td>no</td></tr>
+<tr><td>Leave to menu</td><td><kbd>Esc</kbd></td><td>no</td></tr>
+</tbody></table>
+<h2 id="stations">Stations<a class="a" href="#stations">#</a></h2>
+<h3 id="f1-helm">F1 Helm<a class="a" href="#f1-helm">#</a></h3><p>Flies the ship. Throttle sets a target speed. With flight assist on, the ship damps drift; off, it is Newtonian. The Helm view accepts mouse fire. The autopilot steers around planets and moons.</p>
+<h3 id="f2-weapons">F2 Weapons<a class="a" href="#f2-weapons">#</a></h3><p>Lances (hitscan, heat), thunder torpedoes (slow, heavy), Gungnir missiles (homing, need a lock). Damage depends on the facing hit and on frequency matching.</p>
+<h3 id="f3-engineering">F3 Engineering<a class="a" href="#f3-engineering">#</a></h3><p>Reactor budget with power and coolant sliders for engines, warp, shields, lances, sensors and life support. Presets <kbd>1</kbd> balanced, <kbd>2</kbd> weapons, <kbd>3</kbd> shields. Heat beyond the limit burns a system out.</p>
+<h3 id="f4-damage-control">F4 Damage control<a class="a" href="#f4-damage-control">#</a></h3><p>System health and three repair teams you send to systems. Without life support you lose crew.</p>
+<h3 id="f5-science">F5 Science<a class="a" href="#f5-science">#</a></h3><p>Hold a scan on a target (<kbd>N</kbd>) to reveal its shield frequency, class and boarding difficulty. <kbd>U</kbd> runs a long-range sweep.</p>
+<h3 id="f6-comms">F6 Comms<a class="a" href="#f6-comms">#</a></h3><p>Hail (<kbd>H</kbd>), choose replies with the number keys, order wingmen, demand surrender, and read the message log.</p>
+<h3 id="f7-map">F7 Map<a class="a" href="#f7-map">#</a></h3><p>Sector map. Set a destination, add waypoints, start the autopilot, plot a warp to another sector (costs fuel; charge takes about 6 s at nominal power).</p>
+<h3 id="crew-auto">Crew AUTO<a class="a" href="#crew-auto">#</a></h3><p>Helm, Weapons, Engineering, Damage and Science can each run on AUTO at skill 0.7. AUTO is never as good as a focused player.</p>
+<h2 id="ships-and-enemies">Ships and enemies<a class="a" href="#ships-and-enemies">#</a></h2>
+<table><thead><tr><th>Class</th><th>Hull</th><th>Shield (per facing)</th><th>Torp/Missiles</th><th>Crew</th><th>Boarding</th></tr></thead><tbody>
+<tr><td>Longship (you)</td><td>260</td><td>120</td><td>8 / 12</td><td>24</td><td>3</td></tr>
+<tr><td>Skiff (wingman)</td><td>110</td><td>60</td><td>2 / 4</td><td>4</td><td>1</td></tr>
+<tr><td>Interceptor</td><td>60</td><td>35</td><td>0 / 2</td><td>2</td><td>1</td></tr>
+<tr><td>Cutter</td><td>120</td><td>70</td><td>2 / 3</td><td>8</td><td>2</td></tr>
+<tr><td>Frigate</td><td>260</td><td>130</td><td>4 / 4</td><td>20</td><td>3</td></tr>
+<tr><td>Destroyer</td><td>420</td><td>200</td><td>6 / 6</td><td>40</td><td>4</td></tr>
+<tr><td>Dreadnought</td><td>1100</td><td>480</td><td>12 / 12</td><td>120</td><td>5</td></tr>
+</tbody></table>
+<p>Minion AI: patrol, intercept, attack (circle-strafe), flee when hurt, call reinforcements. A ship with hull under 12 % may surrender and drift disabled.</p>
+<h2 id="sectors">Sectors<a class="a" href="#sectors">#</a></h2>
+<p>Mars Orbit (Mars, Forge, Phobos, Deimos), Phobos / Deimos (Phobos Relay), Asteroid Belt (Ceres, Belt Outpost), Jupiter / Ganymede (Ganymede Port), Luna (Tycho Fort), Earth Orbit (Concord forts, Geneva Dock). Warp gates are not built; warping between sectors uses the warp drive and fuel.</p>
+<h2 id="starbases">Starbases<a class="a" href="#starbases">#</a></h2>
+<p>Friendly stations (Forge, Phobos Relay, Belt Outpost, Ganymede Port) offer repair, rearm, refuel, shipyard upgrades (levels 1 to 3, costs 400 and 900 credits) and a market of 12 commodities: ore, ice, iron, steel, grain, mead, medicine, electronics, weapons, machinery, luxuries and runestones. Prices vary by station (±30 %) and drift (±15 % every 90 s).</p>
+<h2 id="boarding-actions">Boarding actions<a class="a" href="#boarding-actions">#</a></h2>
+<h3 id="levels">Levels<a class="a" href="#levels">#</a></h3><p>Generated from a seed: a tile grid of 4 m tiles, rooms chained from the airlock, themed as corvette, station, prison barge or dreadnought bridge, in five sizes. Up to three doors on the main path are locked (bronze, silver, gold) and each key lies in a region reachable without it; a solver checks every level.</p>
+<h3 id="weapons">Weapons<a class="a" href="#weapons">#</a></h3>
+<table><thead><tr><th>Slot</th><th>Weapon</th><th>Notes</th></tr></thead><tbody>
+<tr><td>1</td><td>Axe</td><td>damage 25, melee</td></tr><tr><td>2</td><td>Blaster</td><td>15</td></tr><tr><td>3</td><td>Scatter-gun</td><td>12 × 4 pellets</td></tr><tr><td>4</td><td>Rattler</td><td>8 at 10 shots a second</td></tr><tr><td>5</td><td>Mjolnir rockets</td><td>120 plus 5 m splash</td></tr><tr><td>6</td><td>Valkyrie rail</td><td>150, pierces</td></tr></tbody></table>
+<p>Armour absorbs 30 / 60 / 80 % depending on the amount held. Pick up health, ammunition, armour and keys.</p>
+<h3 id="monsters-hit-points">Monsters (hit points)<a class="a" href="#monsters-hit-points">#</a></h3>
+<p>Grunt 30 · Guard 100 · Gunner 175 · Medic 300 (revives corpses in 3 s) · Enforcer 240 (melee) · Mech 750 · Voss 1500. They see and hear you; an alarm calls everyone.</p>
+<h3 id="after-a-boarding">After a boarding<a class="a" href="#after-a-boarding">#</a></h3><p>Success: +15 credits per kill, +300 for the objective, +2 torpedoes and +3 missiles, and the ship is removed (captured or sabotaged). Crew lost equals damage taken divided by 25. Fleeing or dying ends the action; dying also ends the mission.</p>
+<h2 id="settings-and-save-files">Settings and save files<a class="a" href="#settings-and-save-files">#</a></h2>
+<table><thead><tr><th>Setting</th><th>Range</th></tr></thead><tbody>
+<tr><td>Difficulty</td><td>Thrall 0.7 · Karl 1.0 · Jarl 1.4</td></tr><tr><td>Master volume</td><td>0 to 100 %</td></tr><tr><td>Music</td><td>on / off</td></tr><tr><td>Mouse sensitivity</td><td>0.2× to 3.0× (boarding mouse-look)</td></tr><tr><td>Invert Y</td><td>flips space pitch and boarding look</td></tr><tr><td>Key bindings</td><td>26 flight actions; a clash shows in red</td></tr></tbody></table>
+<p>Files live in <code>$KAGG2_HOME</code>, otherwise <code>~/.kagg2/</code>: <code>settings.txt</code> (written when you leave Settings and on quit) and <code>save.txt</code> (written after each won mission: next mission, credits, upgrade levels, ending). Both are small readable text files with a version header; delete them to reset. A damaged file falls back to defaults.</p>
+<h2 id="troubleshooting">Troubleshooting<a class="a" href="#troubleshooting">#</a></h2>
+<table><thead><tr><th>Problem</th><th>Fix</th></tr></thead><tbody>
+<tr><td><code>cargo run</code> says it cannot pick a binary</td><td>Fixed: <code>default-run = "kagg2"</code> in <code>Cargo.toml</code>. The other binary is <code>texgen</code> (writes the texture PNGs).</td></tr>
+<tr><td>Game is slow</td><td>Use <code>./run.sh</code> (release). Debug builds are slow because meshes are lit on the CPU.</td></tr>
+<tr><td>Nothing can be boarded</td><td>Target the ship (<kbd>T</kbd>), get its hull under 60 % with shields gone, and close to 450 units.</td></tr>
+<tr><td>A key does nothing after rebinding</td><td>Another action may share the key (red rows in Settings), or the key is used by a station panel.</td></tr>
+<tr><td>Continue is greyed out</td><td>No <code>save.txt</code> yet: win mission 1 first.</td></tr>
+</tbody></table>
+</main></div><script>
+const links=[...document.querySelectorAll('aside a')];const heads=links.map(a=>document.getElementById(a.getAttribute('href').slice(1)));
+const onScroll=()=>{let cur=0,best=-1e9;heads.forEach((h,i)=>{if(!h)return;const t=h.getBoundingClientRect().top;if(t<130&&t>best){best=t;cur=i}});links.forEach((a,i)=>a.classList.toggle('cur',i===cur))};
+addEventListener('scroll',onScroll,{passive:true});onScroll();
+</script><footer><a class="brand" href="index.html"><span class="rune">ᛟ</span> KAGG2</a><span>MARS VIKINGS AGAINST THE EARTH MINIONS</span><small>v0.30.0 · generated by tools/make_html.py: edit tools/html_src/*.html, not this file</small></footer></body></html>

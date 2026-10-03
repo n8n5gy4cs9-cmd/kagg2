@@ -1,0 +1,74 @@
+<h1>AI helper guide</h1>
+<p>Everything an AI coding agent needs to work in this repository without breaking it. Read this, then <code>AGENTS.md</code>, <code>tasks.md</code> and <code>HANDOFF.md</code>.</p>
+<h2>Orientation in one minute</h2>
+<ul>
+<li><strong>What:</strong> Kagg2, a Rust (edition 2024) game: a bridge simulator in space plus a first-person boarding game. Crate <code>kagg2</code>, version in <code>Cargo.toml</code>.</li>
+<li><strong>Where the work is:</strong> <code>tasks.md</code> lists Done and Undone tasks. Do the first undone task unless told otherwise. Details per task are in <code>PLAN.md</code>.</li>
+<li><strong>State of play:</strong> <code>HANDOFF.md</code> says what is done, what is next, what is unverified and how to resume.</li>
+<li><strong>Folder rules:</strong> <code>../AGENTS.md</code> (Rust rules) is inherited; <code>AGENTS.md</code> here adds Kagg2 rules. The VoxlBit/NordCraft documentation rules do not apply.</li>
+</ul>
+<h2>Hard rules</h2>
+<table><thead><tr><th>Rule</th><th>Why</th></tr></thead><tbody>
+<tr><td>No <code>unwrap()</code>/<code>expect()</code> outside tests; no <code>unsafe</code></td><td>long-running game loop; project policy</td></tr>
+<tr><td><code>src/sim/</code> and <code>src/board/</code> never import <code>macroquad</code></td><td>headless, testable, multiplayer-ready</td></tr>
+<tr><td>Seeded RNG only; no wall clock or <code>HashMap</code> iteration in the sim</td><td>determinism (<code>state_hash</code> tests)</td></tr>
+<tr><td>Generated assets only; never copy art or audio from <code>REFERENCE_tobe_DELETED/</code></td><td>licence; port logic only, with a <code>// ref: file fn</code> comment</td></tr>
+<tr><td>No new dependencies unless asked</td><td>keep the build small; prefer std</td></tr>
+<tr><td>Do not edit <code>Cargo.lock</code> or <code>target/</code> by hand</td><td>cargo owns them</td></tr>
+<tr><td>Minimal diffs; do only the task; note extras in one line</td><td>review-ability</td></tr>
+<tr><td>If a feature is not in <code>PLAN.md</code>, note it instead of building it</td><td>scope control</td></tr>
+</tbody></table>
+<h2>Definition of done (run before finishing)</h2>
+<pre><code>cargo check
+cargo clippy --all-targets -- -D warnings
+cargo test --release
+cargo fmt
+python3 tools/make_html.py      # only if docs changed</code></pre>
+<p>Quote real command output as evidence. Max three repair attempts per failing check, then stop and report the blocker. After the task: move the line in <code>tasks.md</code> to Done, update <code>HANDOFF.md</code> and the design docs touched, bump the version (minor per task, patch per fix) and offer a one-line commit message <code>vX.Y.Z: ...</code>.</p>
+<h2>File map for agents</h2>
+<table><thead><tr><th>To change...</th><th>Open</th></tr></thead><tbody>
+<tr><td>Mission stages, goals, spawns</td><td><code>src/sim/mission.rs</code></td></tr>
+<tr><td>Briefings, verses, endings</td><td><code>src/story.rs</code></td></tr>
+<tr><td>Screens (menu, briefing, debrief, ending, help)</td><td><code>src/gfx/screens.rs</code>; state machine <code>src/app.rs</code>; wiring <code>src/main.rs</code></td></tr>
+<tr><td>Settings, saves</td><td><code>src/save.rs</code>, <code>src/gfx/settings_ui.rs</code>, <code>src/gfx/keys.rs</code></td></tr>
+<tr><td>Help text</td><td><code>src/gfx/help.rs</code></td></tr>
+<tr><td>Space input, HUD captions, boarding trigger</td><td><code>src/gfx/space_scene.rs</code></td></tr>
+<tr><td>Enemy behaviour</td><td><code>src/sim/ai.rs</code>, <code>src/sim/combat.rs</code></td></tr>
+<tr><td>Ship stats and upgrades</td><td><code>src/sim/ops.rs</code>, <code>src/sim/econ.rs</code></td></tr>
+<tr><td>Sectors and stock encounters</td><td><code>src/sim/sector.rs</code></td></tr>
+<tr><td>Boarding levels, monsters, weapons</td><td><code>src/board/*.rs</code>; scene <code>src/gfx/board_scene.rs</code></td></tr>
+<tr><td>Launcher and flags</td><td><code>run.sh</code>, <code>parse_cli</code> in <code>src/main.rs</code></td></tr>
+</tbody></table>
+<h2>Recipes</h2>
+<h3>Tune a mission</h3>
+<p>Edit the numbers in the mission's static (<code>sim/mission.rs</code>): spawn offsets (player-frame, <code>-z</code> is ahead), class lists, beat times, the stage <code>limit</code>. Run <code>cargo test --release --lib mission</code>. Do not make objective text longer than 79 characters or captions longer than 99; tests enforce it.</p>
+<h3>Add a goal or a role</h3>
+<p>Extend <code>Goal</code> / <code>Role</code>, handle it in <code>goal_met</code> / <code>do_spawn</code>, add a test. Decide whether the goal must wait for spawns (<code>beats_done</code>).</p>
+<h3>Add a setting</h3>
+<p><code>Settings</code> field, <code>to_text</code>, <code>from_text</code>, a row in <code>settings_ui.rs</code> (adjust <code>FIXED_ROWS</code> and the match arms), apply it in <code>main.rs</code>, extend the round-trip test in <code>save.rs</code>.</p>
+<h3>Add a keybinding</h3>
+<p>See the developer guide: <code>Bind</code> variant, <code>ALL</code> length, name, default, replace the literal key in <code>space_scene.rs</code>.</p>
+<h3>Find where an event is handled</h3>
+<p>Events are defined in <code>sim/event.rs</code>; the scene reacts in <code>SpaceScene::on_event</code>; missions only see <code>Destroyed</code> directly (plus world state polling).</p>
+<h2>Pitfalls seen in this repo</h2>
+<ul>
+<li>macOS <code>sed -i</code> needs an argument; use <code>perl -pi -e</code> or Python for scripted edits. In zsh, unquoted globs such as <code>--include=*.rs</code> fail: quote them.</li>
+<li>Edition 2024 reserves <code>gen</code>; let-chains are in use (clippy asks for them); prefer <code>is_multiple_of</code> over <code>% n == 0</code>.</li>
+<li><code>macroquad</code> pixel-font text should use integer scales; the HUD derives them from <code>ui_scale</code>.</li>
+<li>The sim is stepped from <code>SpaceScene::update</code>; discrete commands wait in a queue until a step runs, held commands keep only their latest value.</li>
+<li>Entity labels are <code>&amp;'static str</code>; mission spawns override labels with static strings, and goals match by prefix (<code>starts_with</code>).</li>
+<li>Run the game in <code>--release</code>; debug is slow. Screenshots: <code>./run.sh shot out.png --frames N</code>. A real mission flow needs a human at the keyboard.</li>
+<li>Use a scratch <code>KAGG2_HOME</code> (for example under <code>target/</code>) when running the game from scripts so your own settings and saves are not touched.</li>
+</ul>
+<h2>Verification checklist for reviewers</h2>
+<ul>
+<li>Clippy clean and all tests pass; <code>cargo fmt</code> applied.</li>
+<li>No macroquad in <code>sim/</code> or <code>board/</code>; no wall clock; no new unwraps.</li>
+<li>Docs, <code>tasks.md</code>, <code>HANDOFF.md</code> and the version agree.</li>
+<li>Anything not verified (sound, mouse feel, balance) is stated in <code>HANDOFF.md</code>.</li>
+</ul>
+<h2>Prompt snippet for a new agent session</h2>
+<pre><code>Read HANDOFF.md, tasks.md and AGENTS.md in Kagga2/. Do the first undone task.
+Follow the Kagg2 rules (headless sim, determinism, generated assets, no unwrap).
+Finish with cargo check, clippy -D warnings, cargo test --release, cargo fmt,
+update tasks.md/HANDOFF.md/docs, bump the version and offer a commit message.</code></pre>
