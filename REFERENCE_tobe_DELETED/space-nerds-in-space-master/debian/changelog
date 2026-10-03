@@ -1,0 +1,5 @@
+snis (0.20150207) UNRELEASED; urgency=low
+
+  * Initial debian packaging. 
+
+ -- Stephen M. Cameron <stephenmcameron@gmail.com>  Sat, 07 Feb 2015 16:47:41 -0800

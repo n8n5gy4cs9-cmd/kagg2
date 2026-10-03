@@ -1,0 +1,168 @@
+.TH SPACE-NERDS-IN-SPACE "6" "Feb 2025" "snis_server" "Games"
+.SH NAME
+snis_server \- Multi player cooperative star ship bridge simulator (server) 
+.SH SYNOPSIS
+.B snis_server
+-l lobbyhost
+-L location
+[ -m multiverse location ]
+[ -n servernick ]
+[ --enable-enscript ]
+.SH DESCRIPTION
+.\" Add any additional description here
+.warn 511
+.PP
+snis_server is a server process for the game Space Nerds In Space, which is a
+multiplayer starship bridge simulator.  The server process simulates the game
+universe and processes input data from client processes and sends outputs to
+client processes.  The "location" parameter is used to distinguish one game
+instance from another running on the same host (multiple snis_server processes
+may be run on the same host).  The location should be a short human readable
+string to uniquely identify the game instance and is required.  The lobbyhost
+is the hostname of the server hosting the ssgl_server process.
+.SH Examples:
+.TP
+Note:
+Normally, you shouldn't have to start snis_server manually yourself.  It should
+either be started by snis_client, snis_multiverse, or by the snis_launcher script.
+But in case you want to start it manually for whatever reason, here are some
+examples.
+.TP
+- Ordinary invocation
+.nf
+
+	snis_server -l lobbyhost -L location -m multiverse-location \\
+		-n server-nickname
+.fi
+.TP
+- Bare snis_server
+Running a bare snis_server instance with no lobby and no snis_multiverse, allowing
+WAN connections from snis_clients on port 20000
+.nf
+
+	snis_server --allow-remote-networks -L location -s solarsystem \\
+		-n server-nickname --nolobby -p 20000
+.fi
+.SH Options:
+.TP
+\fB\--acknowledgments\fR
+Prints out acknowledgments and license information and exits.
+.TP
+\fB\--allow-remote-networks\fR
+By default, snis_server will drop connections from any client originating
+from a different network, allowing connections only from clients on the
+same network, as it is primarily a LAN game.  This option allows clients
+to connect from different networks.  There is also a tweakable variable in the
+console LOCAL-NET-ONLY, which this option sets to zero.
+.TP
+\fB\-e, --enable-enscript\fR
+Enable the "enscript" command on the Demon screen.  This allows clients to create
+files on the server so you should probably leave this off.
+.TP
+\fB\-g, --NAT-ghetto-mode\fR
+If it happens that snis_server cannot connect to snis_multiverse using the IP
+addresses it gets from ssgl_server, this flag makes it take a wild guess that
+the reason for this is NAT, so that ssgl_server has the wrong IP addresses and
+it takes another wild guess that snis_multiverse is running on the same host as
+ssgl_server, and so it attempts to connect using the IP address of the lobby host
+and the port number it got from the lobby for the snis_server on the theory that
+the port number will work because of port forwarding.
+.TP
+\fB\-h, --help\fR
+Prints a usage message and exits.
+.TP
+\fB\-l, --lobbyhost\fR
+Set the hostname at which the lobbyhost is running.
+.TP
+\fB\-L, --location\fR
+Set the "location" to be used with the lobby server.  This is just
+and arbitrary string for human consumption to differentiate one gameserver
+from another.  It is required.
+.TP
+\fB\-m, --multiverse location\fR
+Set the 'location' of the snis_multiverse server to connect to.  snis_server
+will monitor the lobby looking for entries with game type of 'SNIS-MVERSE'
+(i.e. for instances of snis_multiverse) and with the location field set to
+the value specified by the --multiverse option.
+.TP
+\fB\-n nickname, --servernick nickname\fR
+Specifies a nickname for this snis_server instance.  This name will be
+transmitted to ssgl_server, and be visible in snis_client in the lobby,
+and in the output of lsssgl.
+.TP
+\fB\--nolobby\fR
+This is for running a bare snis_server instance with no lobby (no ssgl_server)
+and no snis_multiverse.
+.TP
+\fB\-p port-number, --port port-number\fR
+Specify the port number to use for incoming connections from snis_client.
+If not specified a port will be chosen randomly from the default range
+for dynamic ports, 49152 - 65535.
+.TP
+\fB\-r min:max, --portrange min:max\fR
+.TP
+By default snis_server chooses a random port in the range 49152 - 65535
+but you can specify another range with this option.  This is useful if you
+are running behind a firewall and want to open up only a smaller range
+of ports.
+\fB\-s solarsystem-name, --solarsystem solarsystem-name\fR
+Specifies the solarsystem name. This is used to select what assets
+to use for skybox textures, planet textures and so on.  The default
+solarsystem name is "default".
+.TP
+\fB\-t, --trap-nans\fR
+Trap (crash) whenever certain floating point exceptions occur.
+This is for debugging erroneous floating point calculations that
+produce NaN (not a number) values, such as divide-by-zero, overflow,
+and so on.
+.TP
+\fB\-v, --version\fR
+Print the program's version number and exit.
+.SH FILES
+.PP
+/dev/input/js0, the joystick device node.
+.PP
+/dev/input/event5, the rumble effect device. 
+.PP
+/usr/share/snis/sounds/*.ogg contain the audio data used by the game.
+.PP
+share/snis/luascripts/* -- various lua scripts which may be run to
+implement scenarios or missions. The file names of luascripts must
+be uppercase -- use ABC.LUA, not abc.lua. One level of subdirectories
+is allowed -- XXX/ABC.LUA is permitted, but not XXX/YYY/ABC.LUA.
+If multiple subdirectories contain scripts with the same name, the
+first script encountered is executed.  That is to say, if you have
+A.LUA, X/A.LUA, Y/A.LUA, Z/A.LUA, and you execute "a" from the demon
+screen, A.LUA will be executed. If A.LUA didn't exist, then X/A.LUA
+would be executed.  You can differentate by typing, e.g. "z/a" on
+the demon screen to execute Z/A.LUA.
+.PP
+.SH ENVIRONMENT VARIABLES
+.PP
+SNISRAND can be set to a random seed to affect universe generation
+.PP
+SNIS_ASSET_DIR can cause the program to use a different directory to read
+various assets (models, sounds, etc.) from a different directory allowing
+easy substitution of all art assets.   Default is to use share/snis.
+.PP
+SSGL_PRIMARY_IP_PROBE_ADDR
+If you are on a dual-homed machine with multiple network interfaces on
+multiple networks or on a machine that is on an isolated network that
+can't reach the internet, you may need to use this.  By default
+snis_server assumes that the interface to listen for connections on is
+one that can reach 8.8.8.8 (Google's DNS server).  No packets are
+transmitted to 8.8.8.8, it just queries the routing table to see what
+interface should be used to transmit there if we wanted to.
+If ssgl_server is not reachable by the same interface that can reach
+8.8.8.8, or if there is no interace that can reach 8.8.8.8, then this
+variable can be set to any IP address on the network on which
+ssgl_server is reachable so that the correct network interface is chosen.
+.SH SEE ALSO
+.PP
+snis_client(6), ssgl_server(6), snis_multiverse(6), lsssgl(1).
+.SH GOOD LUCK
+.PP
+You'll need it.
+.SH AUTHOR
+Written by Stephen M. Cameron 
+.br

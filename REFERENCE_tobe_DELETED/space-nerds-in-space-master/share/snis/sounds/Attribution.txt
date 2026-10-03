@@ -1,0 +1,276 @@
+atmospheric-friction.ogg:
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/license/by-sa/3.0/
+COPYRIGHT=2015 by Stephen M. Cameron
+
+mining-bot-deployed.ogg:
+COPYRIGHT=2015 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+mining-bot-standing-by.ogg:
+COPYRIGHT=2015 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+mining-bot-stowed.ogg:
+COPYRIGHT=2015 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+docking-sound.ogg:
+COPYRIGHT=2015 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+big_explosion.ogg: 
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0/
+COPYRIGHT=2008 by Stephen M. Cameron
+
+dangerous-radiation.ogg: 
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0/
+COPYRIGHT=2014 by Stephen M. Cameron
+
+bigshotlaser.ogg: 
+Donated by freesound.org user TheHadnot to the Public Domain.
+http://creativecommons.org/publicdomain/zero/1.0/
+"A possibly useful sound effect for a futuristic laser rifle. I combined the sounds of a Desert Eagle, Sharp Explosion, Laser and a Power Down effect to create this sound.
+
+Enjoy! This is my first upload here."
+
+flak_gun_sound.ogg:
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0/
+COPYRIGHT=2008 by Stephen M. Cameron
+
+flak_hit.ogg:
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0/
+COPYRIGHT=2008 by Stephen M. Cameron
+
+offscreen.ogg:
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0/
+COPYRIGHT=2008 by Stephen M. Cameron
+
+onscreen.ogg:
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0/
+COPYRIGHT=2008 by Stephen M. Cameron
+
+changescreen.ogg:
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0/
+COPYRIGHT=2017 by Stephen M. Cameron
+
+slider-noise.ogg:
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0/
+COPYRIGHT=2008 by Stephen M. Cameron
+
+warpdrive.ogg:
+LICENSE=Creative Commons Attribution 3.0 Unported (CC BY 3.0) http://creativecommons.org/licenses/by/3.0/
+COPYRIGHT=2011 by fressound.org user "owyheesound" and freesound.org user "vedas", aka "Uncle Reggie" aka JB Slater (see http://unclereggiesmagicradio.tumblr.com/ the sound is from a radio play in episode 1)
+
+short-warpdrive.ogg (modified version of warpdrive.ogg):
+LICENSE=Creative Commons Attribution 3.0 Unported (CC BY 3.0) http://creativecommons.org/licenses/by/3.0/
+COPYRIGHT=2011 by fressound.org user "owyheesound" and freesound.org user "vedas", aka "Uncle Reggie"  aka JB Slater (see http://unclereggiesmagicradio.tumblr.com/ the sound is from a radio play in episode 1)
+
+torpedo-loading.ogg (public domain)
+An old elevator you hear a folding door shut, then heard the engine and finally gets to hear the folding door.  **Sound free for all, can download and share**
+Sound created by: Abel Madrona Antón
+
+comms-hail.ogg (public domain)
+Created by Stephen M. Cameron Jan 18, 2014 and donated to the public domain
+
+docking-system-engaged.ogg
+COPYRIGHT=2015 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+docking-system-disengaged.ogg
+COPYRIGHT=2015 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+permission-to-dock-granted.ogg
+COPYRIGHT=2015 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+permission-to-dock-denied.ogg
+COPYRIGHT=2015 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+permission-to-dock-has-expired.ogg
+COPYRIGHT=2015 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+welcome-to-starbase.ogg
+COPYRIGHT=2015 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+hull-creak-0.ogg
+COPYRIGHT=2016 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+hull-creak-1.ogg
+COPYRIGHT=2016 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+hull-creak-2.ogg
+COPYRIGHT=2016 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+hull-creak-3.ogg
+COPYRIGHT=2016 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+hull-creak-4.ogg
+COPYRIGHT=2016 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+hull-creak-5.ogg
+COPYRIGHT=2016 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+hull-creak-6.ogg
+COPYRIGHT=2016 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+hull-creak-7.ogg
+COPYRIGHT=2016 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+hull-creak-8.ogg
+COPYRIGHT=2016 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+hull-creak-9.ogg
+COPYRIGHT=2016 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+ui1.ogg
+COPYRIGHT=2017 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+ui2.ogg
+COPYRIGHT=2017 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+ui3.ogg
+COPYRIGHT=2017 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+ui4.ogg
+COPYRIGHT=2017 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+ui5.ogg
+COPYRIGHT=2017 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+ui6.ogg
+COPYRIGHT=2017 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+ui7.ogg
+COPYRIGHT=2017 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+ui8.ogg
+COPYRIGHT=2017 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+ui9.ogg
+COPYRIGHT=2017 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+ui10.ogg
+COPYRIGHT=2017 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+ui11.ogg
+COPYRIGHT=2017 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+ui12.ogg
+COPYRIGHT=2017 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+ui13.ogg
+COPYRIGHT=2017 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+ui14.ogg
+COPYRIGHT=2017 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+ui15.ogg
+COPYRIGHT=2017 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+ui16.ogg
+COPYRIGHT=2017 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+ui17.ogg
+COPYRIGHT=2017 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+ui18.ogg
+COPYRIGHT=2017 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+ui19.ogg
+COPYRIGHT=2017 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+ui20.ogg
+COPYRIGHT=2017 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+ui21.ogg
+COPYRIGHT=2017 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+ui22.ogg
+COPYRIGHT=2017 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+ui23.ogg
+COPYRIGHT=2017 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+ui24.ogg
+COPYRIGHT=2017 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+ui25.ogg
+COPYRIGHT=2017 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+ui26.ogg
+COPYRIGHT=2017 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+ui27.ogg
+COPYRIGHT=2017 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+ui28.ogg
+COPYRIGHT=2017 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+ui29.ogg
+COPYRIGHT=2017 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0
+
+spacemonster_slap.ogg
+COPYRIGHT=2018 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0/
+
+alarm_buzzer.ogg
+COPYRIGHT=2018 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0/
+
+atlas_rocket_sample.ogg
+atlas_rocket_sample.ogg is public domain, obtained from NASA.
+It is this sound: http://www.nasa.gov/mp3/590329main_ringtone_SDO_launchNats.mp3
+(mixed with a reversed instance of itself).
+
+maneuvering_thruster.ogg
+maneuvering_thruster.ogg is public domain, obtained from NASA,
+It is this sound: http://www.nasa.gov/mp3/590329main_ringtone_SDO_launchNats.mp3
+(mixed with a reversed instance of itself with a high pass filter plus brownian
+noise with a high pass filter).
+
+missile_launch.ogg
+COPYRIGHT=2018 by Stephen M. Cameron
+LICENSE=Creative Commons Attribution-Share Alike 3.0 License  http://creativecommons.org/licenses/by-sa/3.0/

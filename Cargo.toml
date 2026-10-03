@@ -1,0 +1,9 @@
+[package]
+name = "kagga2"
+version = "0.7.0"
+edition = "2024"
+
+[dependencies]
+macroquad = "0.4.16"
+png = "0.17"
+glam = "0.27"

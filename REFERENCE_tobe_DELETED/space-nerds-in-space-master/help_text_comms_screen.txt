@@ -1,0 +1,23 @@
+
+/* This is C code, not plain text */
+
+	/* 5 - Comms help text */
+	"COMMUNICATIONS\n\n"
+	"  ENTER TEXT TO TRANSMIT ON CURRENT CHANNEL\n\n"
+	FKEYS_HELP_TEXT
+	"  CONTROLS\n"
+	"  * ZOOM CONTROLS MAIN SCREEN ZOOM\n"
+	"  * RED ALERT SOUNDS RED ALERT ALARM\n"
+	"  * TOP ROW OF BUTTONS CONTROLS MAIN SCREEN\n\n"
+	"  COMMANDS\n"
+	"  * COMMANDS ARE PRECEDED BY FORWARD SLASH ->  /\n"
+	"  * /help\n"
+	"  * /channel channel-number - change current channel\n"
+	"  * /computer <english request for computer>\n"
+	"  * /eject cargo-bay-number - eject cargo\n"
+	"  * /hail ship-name - hail ship on current channel\n"
+	"  * /inventory - report inventory of ship's cargo hold\n"
+	"  * /passengers - report list of passengers\n"
+	"  * /antenna <bearing> <mark> - aim the high gain antenna\n"
+	"  * /about - information about the game\n"
+	ESC_OR_F1_HELP_TEXT,

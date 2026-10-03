@@ -1,0 +1,47 @@
+# 
+# this file defines factions
+#
+# format is:
+#
+# faction_name
+# x y z
+# faction_name
+# x y z
+# faction_name
+# x y z
+# 
+# where x, y and z are integers that indicate the center of the factions
+# sphere of influence.  When ships are randomly added to the system, they
+# take on the faction whose center is closest to their position.
+#
+# After the factions and spheres of influence are listed, the faction hostility
+# matrix may be modified.  Default hostility between factions is 3 (very low).
+#
+# To modify, add lines such as
+# faction_name_1 faction_name_2 hostility_value
+# hostility values are between 0 and 100.
+# e.g:
+#
+# hostility Wallunni Zarkon 50
+# 
+Neutral
+0 0 0
+Wallunni
+300000 0 300000 
+Schaazbaut
+150000 0 150000
+Zarkon
+0 0 300000
+Vekkazi
+300000 0 0
+hostility Wallunni Schaazbaut 30
+hostility Wallunni Zarkon 90
+hostility Wallunni Vekkazi 30
+hostility Wallunni Neutral 0
+hostility Zarkon Schaazbaut 90
+hostility Zarkon Vekkazi 90
+hostility Zarkon Neutral 90
+hostility Schaazbaut Neutral 0
+hostility Schaazbaut Vekkazi 30
+hostility Vekkazi Neutral 0
+

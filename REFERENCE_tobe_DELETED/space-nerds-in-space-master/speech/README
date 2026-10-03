@@ -1,0 +1,78 @@
+
+How to get speech recognition working with Space Nerds In Space
+---------------------------------------------------------------
+
+1. Install pocketsphinx on the client system to which the microphone you want
+   to use is attached, probably something like:
+
+	apt-get install pocketsphinx;
+	apt-get install pocketsphinx-en-us;
+
+I definitely recommend "apt-get install pocketsphinx; apt-get install pocketsphinx-en-us"
+over trying to build from source.
+
+NOTE: You can build pocketsphinx from source as described in steps 1.1
+and 1.2.  Or you may be able to install it from your distro's package
+repositories instead, which may be more convenient, but I don't have
+instructions for how to do that.
+
+Also, if you get this error:
+
+	ERROR: "acmod.c", line 80: Acoustic model definition is not specified either with -mdef option or with -hmm
+
+it probably means you didn't install pocketsphinx-en-us
+
+1.1 Clone sphinxbase then build it.
+
+git clone https://github.com/cmusphinx/sphinxbase.git
+cd sphinxbase
+sh ./autogen.sh
+sh ./configure --enable-fixed
+make
+sudo make install
+
+1.2 Clone pocketsphinx to the same parent dirctory as sphinxbase then build it.
+
+git clone https://github.com/cmusphinx/pocketsphinx.git
+cd pocketsphinx
+sh ./autogen.sh
+sh ./configure
+make
+sudo make install
+
+NOTE: If you have not modified the vocabulary, you do not need to do steps 2
+and 3 below, as they have already been done and the processed files are in
+"snis.dic" and "snis.lm".  These instructions are mostly here so that
+smcameron doesn't forget how to do it.  Skip to step 4 if you do not want
+to modify the vocabulary.
+
+2. Create specialized language files for pocketsphinx from snis_vocab.txt
+
+Go to http://www.speech.cs.cmu.edu/tools/lmtool-new.html
+
+Click the "BROWSE" button, and upload the snis_vocab.txt
+
+Then click COMPILE KNOWLEDGE BASE
+
+This will produce a number of files, including a gzipped tarball that contains
+all the files.  Download the gzipped tarball which will be named something like
+"TAR1234.tgz" (but probably different numbers than 1234).
+
+3. Download and unpack the TAR1234.tgz, which should contain 5 other files:
+
+1234.dic
+1234.log_pronounce
+1234.vocab
+1234.lm
+1234.sent
+
+Copy these to this directory.
+
+4. Run "queeg500"
+
+$ queeg500
+
+By default, queeg500 will use snis.lm and snis.dic, but if you have made
+your own files (steps 2 and 3 above), you can tell it to use those files
+instead, e.g. "queeg500 1234" will make it use 1234.dic and 1234.lm.
+

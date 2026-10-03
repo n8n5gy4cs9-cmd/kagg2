@@ -1,0 +1,1116 @@
+NOTE: I am still working out what the lua api should look like, so
+      all of this is subject to change.  But this is what it looks like
+      now (barring bitrot of this document, which is not inconceivable.)
+
+TIPS ON DEBUGGING YOUR LUA SCRIPTS:
+
+	1. Run luac on your script -- if luac can't compile it, it won't run in SNIS either.
+		This is a necessary but insufficient condition -- that is, just because luac is happy
+		with your script doesn't mean it contains no errors.
+
+	2. Add print statements into your lua functions to see what they're doing.
+	   The output will be mixed in with the output of snis_server.
+
+	3. Watch out for some common errors:
+
+		A. Specifying the name of a function in a callback registration without quotes.
+
+		function player_docked_callback(player_id, station_id)
+			do_somthing();
+		end
+
+		register_callback("player-docked-event", player_docked_callback);   -- THIS IS WRONG!
+		register_callback("player-docked-event", "player_docked_callback"); -- This is correct.
+
+		B.  Misspelling an event name or function name:
+
+		register_callback("player_docked_event", player_docked_callback);   -- THIS IS WRONG!
+		register_callback("player-dock-event", "player_docked_callback");   -- THIS IS WRONG!
+		register_callback("player-docked-event", "player_dock_callback");   -- THIS IS WRONG!
+		register_callback("player-docked-event", "player_docked_callback"); -- This is correct.
+
+		The symptom of this is typically it just doesn't seem to get called or doesn't do anything.
+		Look in the output of snis_server for things like:
+
+		snis_server: lua callback 'blahblah' had error 2: 'attempt to call a nil value'.
+		do_lua_pcall
+		Stack trace:
+		- ./snis_server(stacktrace+0x3b) [0x41114d]
+		- ./snis_server(main+0x2d41) [0x40b4a1]
+		- /lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0xf5) [0x7fc02f899ec5]
+		- ./snis_server() [0x40bc97]
+
+		C. Misspelling a variable name or function name
+
+		Like many interpreted languages, if you misspell a variable name, Lua happily makes
+		a new variable with the new misspelled name.   Watch out for unexpectedly nil values
+		or for misspelled function names, things like this in snis_server output:
+
+		Error executing lua script: share/snis/luascripts/ERRORTEST.LUA:4: attempt to call global 'blahblah' (a nil value)
+
+		or things like this:
+
+		snis_server: lua callback 'mycallback' had error 2: 'share/snis/luascripts/ERRORTEST.LUA:5: attempt to call global 'blahblah' (a nil value)'.
+		do_lua_pcall
+		Stack trace:
+		- ./snis_server(stacktrace+0x3b) [0x41114d]
+		- ./snis_server(main+0x2d41) [0x40b4a1]
+		- /lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0xf5) [0x7f3149f69ec5]
+		- ./snis_server() [0x40bc97]
+
+	3. Last resort, debug it in snis_server.c
+
+		All the lua callable functions are set up in snis_server.c in a function
+		called "setup_lua", and are named with a leading "l_".  You can put printf()
+		statements inside these "l_..." functions to see what they're doing or if theyr'e
+		getting called how you expect.  The output will be mixed in with snis_server output.
+
+	4. If the first line of your lua script is a comment (begins with "--"), then the "help"
+	   command on the demon screen will interpret this as help text and print it out next
+	   to the name of the script.
+
+Space Nerds In Space lua inteface:
+
+Locations in space nerds in space:
+	x,y,z coords, (0,0,0) is the upper left of the known universe,
+	Most of the action is more or less confined to the x-z plane.
+	Positive x is to the right, negative x is to the left
+	Positive z is out of the screen, negative z is into the screen,
+	Positive y is up, negative y is down.
+
+	Note: that to the player within the game, the z and y coords are swapped,
+	so that *to the player*, positive y is out of the screen, negative y into the
+	screen, and positive z is up, negative z is down.  (See user_coords() function
+	below.)
+
+	TBD function to return size of known universe?
+
+FACTIONS in snis:
+
+        0 "Neutral",
+        1 "Wallunni",
+        2 "Schaazbaut",
+        3 "Zarkon",
+        4 "Vekkazi",
+
+	(See get_faction_name() function, below)
+
+SHIPTYPES in snis:
+
+	SHIP_CLASS_CRUISER 0
+	SHIP_CLASS_DESTROYER 1
+	SHIP_CLASS_FREIGHTER 2
+	SHIP_CLASS_TANKER 3
+	SHIP_CLASS_TRANSPORT 4
+	SHIP_CLASS_BATTLESTAR 5
+	SHIP_CLASS_STARSHIP 6
+	SHIP_CLASS_ASTEROIDMINER 7
+	SHIP_CLASS_SCIENCE 8
+	SHIP_CLASS_SCOUT 9
+	SHIP_CLASS_DRAGONHAWK 10 
+	SHIP_CLASS_SKORPIO 11 
+	SHIP_CLASS_DISRUPTOR 12 
+	SHIP_CLASS_RESEARCH_VESSEL 13 
+
+EVENT TYPES in snis:
+
+	"player-respawn-event",
+		arguments: object id of player
+		return values: none.
+	"player-red-alert-status-event"
+		arguments: object id of player, red alert status value (0 or 1 = off or on)
+		return values: none.
+	"player-death-event",
+		arguments: object id of player
+		return values: none.
+	"player-docked-event",
+		arguments: object id of player, object id of station
+		return values none.
+	"object-death-event",
+		arguments: object id of thing that died.
+		Certain types of object deaths are not reported, e.g.
+		debris, sparks, laserbeams, torpedoes, explosion objects, tractor beams.
+		Only the "important" object deaths are reported.
+		(see delete_from_clients_and_server() in snis_server.c)
+	"object-hit-event"
+		arguments: object id of the thing that was hit by laser or torpedo
+		object id of the thing that fired the laser or torpedo
+	"object-scanned-event"
+		arguments: object id of the player ship and object id of the object
+		scanned. The player must actually select the item for this event to
+		be triggered.
+	"asteroid-mined-event"
+		An asteroid was mined. Arguments: object id of the asteroid and player ship
+		the mining bot belongs to.
+	"derelict-salvaged-event"
+		A derelict was salvaged by the mining bot. Arguments: object id of the derelict
+		and player ship the mining bot belongs to.
+	"ships-logs-recovered-event"
+		Ships logs were recovered from a derelict by the mining bot. Arguments: object id
+		of derelict and object id of player ship mining bot belongs to.
+	"mining-bot-deployed-event"
+		Arguments are id of player ship owning bot, id of mining robot, and id of destination object
+		robot is headed towards. Note that id may be -1 if the destination is a waypoint.
+		See get_mining_bot_destination(), below.
+	"mining-bot-arrived-event"
+		Arguments are id of player ship owning bot and id of mining robot.
+	"mining-bot-retargeted-event"
+		Arguments are id of player ship owning bot, id of mining bot, id of
+		object bot is heading towards (may be -1 if waypoint), and x, y, z
+		coordinates of bot destination.
+	"mining-bot-stowed-event"
+		Arguments are id of player ship owning bot (The bot doesn't exist as an
+		object when it is stowed, so there is no id for it.)
+	"mining-bot-cargo-transfer-event"
+		Arguments are id of player ship owning bot and id of mining robot.
+	"player-warp-travel-event"
+		Arguments are id of player ship, x, y, z coordinates of departed location,
+		x, y, z coordinates of arriving location, and warp factor.
+	"player-wormhole-travel-event"
+		Arguments are id of player ship, x, y, z coordinates of departed location,
+		x, y, z coordinates of arriving location, and equivalent warp factor.
+	"cargo-container-acquired-event"
+		Arguments are id of player ship, commodity index, and
+		commodity quantity. (See get_commodity_name(), get_commodity_units(), below.)
+	"custom-button-press-event"
+		Arguments are the id of the player ship, and the screen (0 - 5 inclusive)
+		that the custom button was on. See set_custom_button_label(), below.
+	"player-collected-bounty"
+		Arguments are the id of the player ship, the id of the ship the bounty was
+		collected for, the amount of the bounty, and the id of the starbase at which
+		the bounty was collected.
+	"passenger-disembarked"
+		Arguments are the passenger number (0 - 80) and id of the destination starbase.
+	"passenger-ejected"
+		Arguments are the passenger number (0 - 80) and id of the starbase at which
+		the passenger was ejected.
+	"player-ejected-cargo-event"
+		Arguments are the ship id, cargo container id, x, y, z, commodity index,
+		and quantity
+	"black-hole-consumed-object-event"
+		Arguments are the black hole ID, the object ID (but the object will no longer
+		exist, or will be a different object), and the object type.
+
+Functions which you may call from lua: 
+
+clear_all() -- this clears the entire universe except for human controlled ships
+	all objects are deleted.  Probably you only use this at the beginning of
+	a mission script.
+
+id = add_random_ship() -- adds a random ship to the universe in a random location
+	returns the "id" of the ship.  If adding ship failed, nil is returned.
+
+id = add_ship(name, x, y, z, type, faction, auto_respawn) -- adds a ship to the
+        universe of the specified type and faction at the specified locations.  If
+        adding ship failed, nil is returned.
+
+set_plot_armor(id, value) -- sets plot armor on specified NPC ship or starbase to value
+	the value may be 0 (no plot armor), or 1 (plot armor).  NPC ships will not attack
+	any victim that has plot armor set to 1.  In this way you can prevent your
+	NPC ships or starbases which are "key to the plot" from being attacked by NPC ships.
+
+id = add_asteroid(x, y, z) -- adds an asteroid at the specified location
+	(it will orbit around the center of the universe). Returns the ID of the
+	asteroid, or nil if it fails.
+
+set_asteroid_speed(id, speed);
+	Sets the speed of the asteroid with the specified id to the specified
+	value.  The speed should be between 0 and 1.
+
+set_asteroid_minerals(id, carbon, silicates, nickeliron, preciousmetals); -- sets the proportions
+	of carbon, silicates, nickeliron, preciousmetals.  Returns 0.0 on success, nil otherwise.
+	May fail if id doesn't match an asteroid.
+
+	Example:
+
+	asteroid = add_asteroid(1000.0, 1000.0, 10000.0);
+	set_asteroid_speed(asteroid, 0.0);
+	set_asteroid_minerals(asteroid, 90.0, 5.0, 3.0, 2.0);
+
+id = add_cargo_container(x, y, z, vx, vy, vz) -- adds a cargo container at specified
+	location and velocity. Returns ID of cargo container, or nil on failure.
+
+id = add_derelict(name, x, y, z, shiptype, faction) -- adds a derelict vessel at
+	specified location. Returns ID of derelict or nil on failure.
+
+rc = derelict_set_ships_log(id, ships_log_entry)
+	Sets the ships log entry (a string) to the specified value for the derelict identified
+	by id. Returns 0.0 if successful, nil otherwise. Maximum length of ships_log_entry is
+	100 characters.
+
+	Example:
+
+	id = add_derelict("BOUNTY", 100, 100, 100, 1, 1);
+	derelict_set_ships_log(id, "Stardate 112.34. Situation is dire. We are being attacked by Zarkon disruptors.");
+
+	These log entries can be recovered by the mining bot.
+
+id = add_starbase(x, y, z, n) - adds a starbase at location x,y with number n (0 <= n <= 99).
+	the starbase will be named "SB-n"  Returns the ID of the starbase, or nil on failure.
+	TODO: allow starbases to be named arbitrary strings.
+
+id = add_planet(name, x, y, z, r, s, t) - adds planet at x,y,z with specified name, radius,
+	and security (security: 0 = low, 1 = medium, 2 = high) and type t (0 = earthlike,
+	1 = gas-giant, 2 = rocky (you can remember because they are alphabetical order)).
+	The last parameter, t, is optional.
+	returns id of planet or nil on failure.   Radius should be between 800 and 7000.
+
+id = add_black_hole(name, x, y, z, r) - adds a black hole at x,y,z with specified name, and
+	radius, returns id of black hole or nil on failure.   Radius should be between 1000
+	and 7000.
+
+id = add_nebula(name, x, y, z, r) - adds nebula at x,y with specified radius and name,
+	returns id of nebula or nil on failure.
+
+id = add_spacemonster(name, x, y, z) - adds spacemonster at x,y,z with specified name,
+	returns id of spacemonster or nil on failure.
+
+id1, id2 = add_wormhole_pair(x1, y1, z1, x2, y2, z2) - adds connected wormholes at the
+	specified location, returns -1 for a wormhole id that fails to create.
+
+id = lookup_by_name(name) - lookup an object by name
+	returns the id of the first object found with the specified name, or nil if there
+	is no object with the specified name.
+
+x,y,z = get_object_location(object_id); -- x,y,z location coordinates of specified object.
+	If the object_id does not exist (anymore), x,y,z will be nil.
+
+(table of player ship ids) = get_player_ship_ids(); -- returns a table containing the
+	ids of all the player ships, indexed 1..n.
+
+	Example:
+
+	player_ids = get_player_ship_ids();
+	for i, v in pairs(player_ids) do
+		print(i, v);
+		x, y, z = get_object_location(v);
+		if (x) then
+			print("object ", v, " location is ", x, ", ", y, ", ", z);
+		else
+			print("object ", v, " no longer exists.");
+		end
+	end
+
+move_object(object_id, x, y, z); -- move object to x, y, z location.
+
+set_object_velocity(object_id, vx, vy, vz); set's and object's velocity
+
+set_object_orientation(object_id, rotx, roty, rotz, angle);
+	sets an object's orientation.  The object orientation is
+	the rotation around the axis defined by the vector from the
+	origin (0, 0, 0)  to (rotx, roty, rotz) of angle (in radians).
+
+set_object_rotational_velocity(object_id, rotx, roty, rotz, angle);
+	sets an objects rotational velocity about the axis defined by
+	rotx, roty, rotz to angle (in radians) per tick (1 tick is 1/10th sec).
+	NOTE: This really only works for "block" objects (useful) and for
+	free-floating turrets (not useful).  Other object types either do not have
+	rotational velocities, or the rotational velocities are computed entirely
+	client side and are thus not mutable.
+
+align_object_towards(object_id, x, y, z, max_rads)
+	Aligns and object to face towards x, y, z (facing means the object's local x
+	points at the destination.  max_rads is the maximum angle to adjust by.
+	returns the total angle of rotation which needs to be applied. (numbers near
+	zero mean alignment is achieved.  If the object_id isn't found
+	-720.0 * PI / 180 is returned.
+
+set_object_relative_position(object_id, rx, ry, rz);
+	Sets and objects position relative to a parent object to which it is
+	attached.  Note: This only works for "block" objects so far.
+
+delete_object(object_id) -- delete the specified object from the universe
+
+comms_transmission(object_id, transmission); -- causes the object to transmit the
+	specified transmission via comms on channel 0.  Note: you may prefer to
+	use comms_channel_transmit() instead.  See below.
+
+comms_enciphered_transmission(object_id, transmission, cipher_key)
+	-- sends an enciphered transmission (see generate_cipher_key, below).
+
+comms_channel_listen(name, channel, callback)
+	name is the name of the entity listening (this was intended to allow the player
+	to hail your listening endpoint by this name, but this was never implemented.)
+	The same name should be used when you eventually call comms_channel_unlisten().
+	channel is the channel number you want to listen on.
+	callback is the name of the function to call when a transmission occurs on
+	the specified channel.  This function should accept 3 parameters, "from",
+	"channel", and "message".  The "from" parameter is the name of who sent the
+	transmission, channel is the channel number (multiple comms_channel_listen()
+	calls can target the same receiving function), and "message" is whatever the
+	message string that was transmitted.
+
+
+	Note: if you transmit on a channel you are listening to, you will recieve your
+	own transmissions, so you must be prepared to ignore them.
+
+		function transmission_received(from, channel, message)
+		   print("Transmission recieved from", from, " on channel ", channel, ".")
+		   print("Message: ", message)
+		end
+
+		comms_channel_listen("Bob", 10, "transmission_received");
+
+	Beware of something like the following:
+
+		function transmission_received(from, channel, message)
+		   print("Transmission recieved from", from, " on channel ", channel, ".")
+		   print("Message: ", message)
+		   comms_channel_transmit("Bob", channel, "Hello!"); -- THIS IS A PROBLEM
+		end
+		comms_channel_listen("Bob", 10, "transmission_received");
+
+	When you receive on a channel, you will transmit on the same channel, and then
+	you will receive your own transmission, to which you will respond, which you will
+	then recieve, to which you will respond, etc.  You'll set up a loop.  So, if you
+	need to transmit on the same channel you receive on (which is the normal case)
+	you have to figure out a way to ignore your own transmissions.  The easiest way
+	is to decouple the transmissions from the messages received.  That is, do not
+	transmit in response to a message received, or if you must, only respond to very
+	specific messages which you never transmit yourself.
+
+comms_channel_unlisten(name, channel)
+
+	Stop listening on the given channel (your listener callback won't be
+	called anymore).
+
+	Example:
+
+	comms_channel_unlisten("Bob", 10);
+
+comms_channel_transmit(name, channel, text)
+
+	Transmit the given text from the given name on the given channel
+	Similar to comms_transmission except can transmit on channels other than
+	zero, and instead of using the name of the object specified, uses whatever
+	name you give it.
+
+	Example:
+
+	comms_channel_transmit("Bob", 10, "Hi from Bob!");
+
+comms_channel_enciphered_transmission(name, channel, text, key)
+
+	Same as comms_channel_transmit, but enciphered (see generate_cipher_key, below).
+	NOTE: THIS FUNCTION IS NOT YET IMPLEMENTED.
+
+text_to_speech(player_ship_id, text_to_speak); -- causes player ship to use text to speech to
+	say the specified text.
+
+register_callback(event_name, callback_name); -- event_name is a string, the name of the event
+	you wish to register a callback for, and	callback_name is a string, the name of
+	the lua function you want to get called when that event occurs.  The arguments passed
+	to the lua function and return values from the lua function depend on the event (see
+	events, above.)
+
+unregister_callback(event_name, callback_name); -- event_name is a string and callback_name
+	are strings, the names of the event and Lua function pair that you wish to
+	disassociate.  If such a pair is registered, it will be unregistered.  If such a
+	pair is not registered, no action occurs.
+
+print_registered_callbacks(); -- print out a list of currently registered callbacks
+	registered via register_callback();
+
+get_object_name(object_id); -- returns string name of specified object
+
+register_timer_callback(callback, timer_ticks, cookie)
+	register a function to be called back in timer_ticks (each timer_tick is 1/10th second).
+	the cookie value is passed to your callback function.  The callback is only triggered
+	once.  If you need a repeated callback, the callback can re-register itself to be
+	called again.
+
+register_proximity_callback(callback, oid1, oid2, distance); -- when the objects
+	indicated by oid1 and oid2 are within the specified distance of one another,
+	the specified callback is called passing the two object ids.
+
+	Example:
+
+	function mycallback(oid1, oid2, distance)
+		print "Player has come within 300 of starbase_x\n";
+        end
+
+	register_proximity_callback("mycallback", player_ids[1], starbase_x, 300);
+
+object_distance(oid1, oid2)
+	Returns the distance between the two specified objects, or nil if either of the objects
+	does not exist.
+
+get_player_damage(id, system); -- returns value of damage to player ship system.
+	id is the id of the player's ship (see get_player_ship_ids() above.)
+	system is the name of the system for which you want damage info, and must be one of:
+        "shields", "impulse" "warp", "maneuvering", "phaser", "sensors", "comms", "tractor"
+	The returned value is between 0 (no damage) and (255) max damage, inclusive. 
+	nil is returned on error (e.g. bad system, bad id, etc.)
+
+set_player_damage(id, system, value, f1, f2, f3)
+set_player_damage(id, system, value) -- sets the damage of the specified system of the
+		specified player.  Id is the id of the player ship, system is the name
+		of the system to damage (see get_player_damage() above.)
+		f1, f2, and f3 are optional parameters which if given represent how the
+		damage is to be distributed to the three components of the specified system.
+		They should be values between 0.0 and 1.0, and the three values should
+		sum to 1.0. Note that each component only has a 1/3 of the capacity for damage
+		of a given system, so that
+
+			set_player_damage(id, system, 255, 0.3333, 0.3333, 0.3333);
+
+		will completely damage all three components of system.
+
+load_skybox(ship_id, filenameprefix) -- loads a new skybox composed of six images for any clients
+	with specified ship id that have the role of main screen.  If filenameprefix is
+	the string "x", then the six images are x0.png, x1.png, x2.png, x3.png, x4.png, and
+	x5.png. These must reside in ${SNIS_ASSET_DIR} (by default, share/snis/textures).
+	If the value "restore-default" is passed as the filenameprefix, then the default
+	skybox for the current solarsystem is loaded.
+
+ux,uy,uz = user_coords(x, y, z) -- returns user (player) coordinates given program coordinates.
+	(this really just swaps y and z. ux == x, uy == z, uz == y).
+
+ai_push_patrol(id, nwaypoints, x, y, z, x2, y2, z2, x3, y3, z3, ... )
+	set up a patrol route (up to 5 waypoints) for ship with specified id.
+
+ai_push_attack(attacker_id, victim_id)
+	make a ship attack something else
+
+ai_push_catatonic(ship_id) -- make a ship catatonic. This is mainly for debugging ship models.
+
+set_faction(object_id, faction_id) -- sets the specified object's faction to the specified
+	faction.  Clears the object's ai stack.
+
+show_timed_text(id, time_in_seconds, textstring);
+	shows a text screen with the given textstring for the specified amount of time
+	on all clients of the bridge for the given player ship id.  If id is -1, then
+	the message is displayed on all clients of all bridges.
+
+show_menu(id, menustring, callback_function);
+	shows a menu defined by menustring to players aboard the ship with the specified id,
+	and calls callback_function, passing the selection made by the user.  The menu is
+	defined by a multiline string. The first line is used as the title of the menu, and
+	subsequent lines define the menu items.  There is a maximum of 10 menu items.  The
+	callback will be passed an integer between 0 and 9 indicating which item was selected.
+
+	Example:
+
+	function my_menu_callback(shipid, selection)
+		print("========================= Player ", shipid, " has chosen ", selection, "\n");
+        end
+
+	player_ids = get_player_ship_ids();
+	show_menu(player_ids[1],
+			"MY MENU\n" ..
+			"ITEM 1\n" ..
+			"ITEM 2\n" ..
+			"ITEM 3\n" ..
+			"ITEM 4\n" ..
+			"ITEM 5\n" ..
+			"ITEM 6\n" ..
+			"ITEM 7\n" ..
+			"ITEM 8\n" ..
+			"ITEM 9\n" ..
+			"ITEM 0\n",
+			"my_menu_callback");
+
+enqueue_lua_script(scriptname);
+	Queue the named lua script for execution;
+
+	The script must reside in share/snis/luascripts, and the filename must
+	end in ".LUA". However you must omit the share/snis/luascripts directory
+	and ".LUA" in the call to enqueue_lua_script.  That is to say:
+
+		enqueue_lua_script("X");
+
+	will queue up the script "share/snis/luascripts/X.LUA" for execution.
+
+	You may have one level of subdirectoires within share/snis/luascripts. If
+	multiple scripts have the same name differing only by subdirectory name,
+	and the invocation does not specify the subdirectory, then the first script
+	with the specified name is executed, starting with share/snis/luascripts and
+	proceeding to subdirectories alphabetically (via scandir(3)'s alphasort()).
+
+	For example, if you have:
+
+		ABC.LUA
+		A/ABC.LUA
+		A/XYZ.LUA
+		B/ABC.LUA
+		B/XYZ.LUA
+
+	enqueue_lua_script("ABC");   -- executes ABC.LUA
+	enqueue_lua_script("A/ABC"); -- executes A/ABC.LUA
+	enqueue_lua_script("B/ABC"); -- executes B/ABC.LUA
+	enqueue_lua_script("XYZ");   -- executes A/XYZ.LUA
+	enqueue_lua_script("A/XYZ"); -- executes A/XYZ.LUA
+	enqueue_lua_script("B/XYZ"); -- executes B/XYZ.LUA
+
+	The length of the commands which may be entered on the demon screen is very
+	limited so keep this in mind when naming scripts and directories and esp.
+	considering scripts that accept command line arguments.
+
+get_ship_attribute(id, attribute_name); -- returns the specified attribute of the ship.  The
+	type depends on the attribute, though generally will be a number or a string.
+
+	The attributes and their types may be found by running the print_ship_attributes program.
+
+	$ make print_ship_attributes
+	$ ./print_ship_attributes
+
+	This will print out a table of the attributes (see below):
+
+	The types are as follows (from key_value_parser.h):
+
+	's' - string
+	'q' - number (uint64_t)
+	'w' - number (uint32_t)
+	'h' - number (uint16_t)
+	'b' - number (uint8_t)
+	'Q' - number (int64_t)
+	'W' - number (int32_t)
+	'H' - number (int16_t)
+	'B' - number (int8_t)
+	'd' - number (double)
+	'f' - number (float)
+
+	Though, to lua, they're all just "numbers."
+
+	A sample of attributes are as follows (this may be out of date:
+
+                                     Key Type     offset       size      index
+                                       x    d         96          8          0
+                                       y    d        104          8          0
+                                       z    d        112          8          0
+                                      vx    d        120          8          0
+                                      vy    d        128          8          0
+                                      vz    d        136          8          0
+                                 heading    d        144          8          0
+                                   alive    h        152          2          0
+                                    type    w        156          4          0
+                               torpedoes    w        168          4          0
+                                   power    w        172          4          0
+	[ -- many attriubutes omitted -- ]
+
+	Example usage:
+
+	player_ids = get_player_ship_ids();
+	money_player_has = get_ship_attribute(player_ids[1], "wallet");
+	ship_name = get_ship_attribute(player_ids[1], "sdata.name"); -- this is almost the same as get_object_name(player_ids[1]);
+								     -- starbases are a special case which get_object_name() handles.
+
+get_commodity_name(index); -- This field allows you to get the names of cargo bay items.
+  Returns the name of the commodity associated with the given index.  The commodities are
+  initially defined by the contents of share/snis/commodities.txt.  The name is the first
+  field in each line this file.  You get the index value via calling for example
+  get_ship_attribute(shipid, "cargo[0].contents.item"), which returns you a number.
+  get_commodity_name() decodes this number into a name.  See the example for
+  get_commodity_units(), below.
+
+get_commodity_units(index); -- This field allows you to get the units of cargo bay items.
+  Returns the units of the commodity associated with the given index.  The commodities are
+  initially defined by the contents of share/snis/commodities.txt.  The units is the second
+  field in each line this file.  You get the index value via calling for example
+  get_ship_attribute(shipid, "cargo[0].contents.item"), which returns you a number.  get_commodity_units()
+  decodes this number into a string defining the units.
+
+  Example:
+
+	player_ids = get_player_ship_ids();
+	cargo = get_ship_attribute(player_ids[1], "cargo[0].contents.item");
+	cargo_name = get_commodity_name(cargo);
+	cargo_units = get_commodity_units(cargo);
+
+lookup_commodity(commodity_name); -- returns the index of a named commodity, or nil
+	if there is no commodity with the specified name.  The name is not case
+	sensitive.
+
+  Example:
+
+	n = lookup_commodity("gold ore");
+
+set_commodity_contents(object_id, commodity_index, quantity, cargo_bay_number) -- sets
+	the contents of a player ship's cargo bay or a cargo container to the specified
+	item and quantity.  If the object_id refers to a cargo container, the cargo_bay_number is
+	ignored and may be omitted.  If the object_id refers to a player ship, the
+	cargo_bay_number should be between 0 and 7 inclusive.  0.0 is returned on success,
+	nil on failure.
+
+  Example:
+
+	my_container = add_cargo_container(1000, 1000, 1000, 0, 0, 0);
+	player_ids = get_player_ship_ids();
+	n = lookup_commodity("gold ore");
+	set_commodity_contents(player_ids[1], n, 100.0, 0);
+	set_commodity_contents(my_container, n, 100.0);
+
+add_commodity(category, name, unit, scans_as, base_price, volatility, legality, odds);
+  Adds a new commodity to the predefined set of commodities.  This is useful for
+  custom scenarios to create special "macguffins".   If the odds are set to zero, then
+  the game will never randomly generate the item, and it is up to the script to place
+  it into the game.  See share/snis/commodities.txt for an explanation of the
+  parameters.
+
+  Example:
+
+	macguffin = add_commodity("electronics", "flux capacity", "gigawatts",
+			"tachyon flux" 100.0, 0.5, 1.0, 0.0);
+	my_container = add_cargo_container(1000, 1000, 1000, 0, 0, 0);
+	player_ids = get_player_ship_ids();
+	n = lookup_commodity("gold ore");
+	set_commodity_contents(player_ids[1], macguffin, 100.0, 0);
+	set_commodity_contents(my_container, macguffin, 100.0);
+
+reset_player_ship(player_ship_id) -- resets the player ship to healthy status with all
+	systems turned off.  Most useful at the beginning of mission scripts.
+
+  Example:
+
+	player_ids = get_player_ship_ids();
+	reset_player_ship(player_ids[1]);
+
+refuel_player_ship(player_ship_id) -- replenishes fuel of player ship
+
+add_turret(parent_id, x, y, z, firing_interval) -- adds a turret onto the specified
+	object at the specified offset with specified firing interval (10ths of secs).
+	Returns the ID of the turret, or nil on failure.
+
+  Example:
+	turret_id = add_turret(starbase_id, 100, 100, 0);
+
+add_block(parent_id, x, y, z, sx, sy, sz, rotx, roty, rotz, angle, material_index, form);
+	Adds a "block" into the universe at the specified location (or relative location
+	if parent_id >= 0) and size, with specified orientation and material.
+
+	x, y, z:
+		if parent_id is -1, then x, y, z indicate the position to add the block.
+		if parent_id is >= 0, then parent_id is the ID of a parent object, and x, y, z
+		denote the relative position the block is added onto the parent object.
+	sx, sy, sz:
+		These denote the dimensions of the block in three axes
+	rotx, roty, rotz, angle:
+		These specify an axis and an angle about which to rotate the block.
+		The angle is in radians.  If you do not want any rotation, use: 1, 0, 0, 0
+		If you want 45 degrees about the X axis, use 1, 0, 0, 45.0 * 3.145927 / 180.0
+	material_index:
+		This chooses a texture for the block.  There are currently two choices, 0 and 1.
+		Anything else is invalid.  0 is suitable for larger blocks, 1 for smaller blocks.
+	form:
+		0.0: block form is a "block" (i.e. a rectangular solid).
+		1.0: block form is a sphere. The maximum of sx, sy, and sz is used for all
+		  three. The sphere cannot be non-uniformly scaled in x,y and z, scaling must
+		  be uniform in all three axes. This is because collision detection for an
+		  ellipsoid is too difficult. See for example:
+		  https://www.geometrictools.com/Documentation/DistancePointEllipseEllipsoid.pdf
+		  I have not implemented that algorithm, so we've got spheres, not ellipsoids.
+		  The sphere will by cylindrically texture mapped with the Z axis corresponding
+		  to the long axis of the cylinder.
+		2.0: block form is a capsule (cylinder with hemispheres at the end).
+		  The length of the cylinder is sx, and the radius is max(sy, sz).
+
+	Returns the ID of the created block, or nil on failure.
+
+	Note: if the parent_id < 0, then the block will be given a random rotational
+	velocity.
+
+  Example:
+
+	block = add_block(-1, 1000, 1000, 1000, 50, 100, 50, 1, 0, 0, 45 * 3.1415927 / 180.0, 0);
+	subblock = add_block(block, 10, 20, 10, 20, 20, 20, 1, 0, 0, 0, 0);
+
+add_turrets_to_block_face(parent_id, face, rows, cols)
+	Adds an array of rows * cols turrets onto one of the faces of a block;
+
+	if parent_id is invalid, nil is returned and nothing is done.
+
+	face is a number betwee 0 and 5 inclusive indicating which face of the block
+	to add the turret array.
+
+	0 - positive x face
+	1 - negative x face
+	2 - positive y face
+	3 - negative y face
+	4 - positive z face
+	5 - negative z face
+
+	face is forced in range by "face = fabs(face) % 6".
+
+	rows and cols indicate the size of the turret array to add.
+
+	Returns 0.0 on success, nil on failure.
+
+  Example:
+	block = add_block(-1, 1000, 1000, 1000, 500, 500, 500, 1, 0, 0, 45 * 3.1415927 / 180.0, 0);
+	add_turrets_to_block_face(block, 1, 2, 3);
+
+attach_science_text(id, text)
+	Adds a string of up to 256 characters to the object with the specified ID. This text
+	will be displayed on the science screen when the object is scanned. This allows for
+	scenarios to inject arbitrary (fictional) content into the game via the science console.
+	For example, you might attach "This asteroid contains a high proportion of crystalline
+	kryptonite", to an asteroid object, and then this would be displayed when the object is
+	scanned by science.
+
+id = get_science_selection(player_ship_id);
+	returns the id of whatever object SCIENCE has currently selected. If nothing is selected
+	nil is returned.
+
+add_explosion(x, y, z, v, nsparks, time, victim_type, explosion_type);
+	Adds an explosion into the simulation with (nsparks) sparks, traveling at
+	velocity related to (v), lasting (time) ticks (30th sec). The explosion is
+	purely cosmetic. Victim type should be a small integer (see the
+	#defines for OBJTYPE_... in snis.h: Typically use OBJTYPE_SHIP2 (1) or the type
+	of the thing which is exploding, if there is such a thing (see below).
+	victim_type is used to decide whether or not there should be debris mixed in
+	with the sparks. explosion_type should be 0 (regular explosion) or 1 (black
+	hole explosion). The former has orange sparks and is spherical in shape, the
+	latter has greenish sparks and is much larger and has a non-spherical shape.
+
+	snis.h:#define OBJTYPE_SHIP1 9 /* players */
+	snis.h:#define OBJTYPE_SHIP2 1 /* computer controlled ships */
+	snis.h:#define OBJTYPE_ASTEROID 2
+	snis.h:#define OBJTYPE_STARBASE 3
+	snis.h:#define OBJTYPE_DEBRIS 4
+	snis.h:#define OBJTYPE_SPARK 5
+	snis.h:#define OBJTYPE_TORPEDO 6
+	snis.h:#define OBJTYPE_LASER 7
+	snis.h:#define OBJTYPE_EXPLOSION 8
+	snis.h:#define OBJTYPE_NEBULA 10
+	snis.h:#define OBJTYPE_WORMHOLE 11
+	snis.h:#define OBJTYPE_SPACEMONSTER 12
+	snis.h:#define OBJTYPE_PLANET 13
+	snis.h:#define OBJTYPE_LASERBEAM 14
+	snis.h:#define OBJTYPE_DERELICT 15
+	snis.h:#define OBJTYPE_TRACTORBEAM 16
+	snis.h:#define OBJTYPE_CARGO_CONTAINER 17
+	snis.h:#define OBJTYPE_WARP_EFFECT 18
+	snis.h:#define OBJTYPE_SHIELD_EFFECT 19
+	snis.h:#define OBJTYPE_DOCKING_PORT 20
+	snis.h:#define OBJTYPE_WARPGATE 21
+	snis.h:#define OBJTYPE_BLOCK 22
+	snis.h:#define OBJTYPE_TURRET 23
+	snis.h:#define OBJTYPE_WARP_CORE 24
+	snis.h:#define OBJTYPE_BLACK_HOLE 25
+
+	Returns 0.0 on success, nil on failure.
+
+dock_player_to_starbase(player_id, starbase_id)
+	Docks the player with an empty docking port on the specified starbase.
+	returns nil on failure, 0.0 on success. May fail if all docking ports
+	are full or if the player id or starbase id are not correct.
+
+x,y,z,id = get_mining_bot_destination(id)
+	Returns the current coordinates of the mining bots destination and the id
+	of that destination if the destination is an object (not a waypoint), or nil
+	if the id is inappropriate or if the mining bot is not deployed.
+
+
+enable_antenna_aiming()
+disable_antenna_aiming()
+	Enables or disables experimental comms antenna aiming code. These are meant to be called from
+	the ENABLE_ANTENNA.LUA and DISABLE_ANTENNA.LUA scripts, run from the demon screen. By default
+	antenna aiming is off. When enabled, comms transmissions may fail or be distorted if the antenna
+	is not aimed well enough, or if some occluder such as a planet, black hole, nebula or star
+	lies between the transmitter and receiver. The antenna aim is indicated on the NAV screen.
+	The antenna aiming feature is not really complete, as there is not enough feedback for COMMS
+	about how well or poorly the transmissions are working, which while somewhat realistic for radio
+	transmissions, aren't fun. So for now, this feature is deemed experimental, and hidden behind
+	this enabling/disabling switch.
+
+set_custom_button_label(player_id, screen, label)
+	Sets the label for a custom button for the specified player ship and screen.
+	"player_id" is the id of the player's ship
+	"screen" is an integer between 0 and 5 inclusive, corresponding to:
+		0 - NAV
+		1 - WEAPONS
+		2 - ENGINEERING
+		3 - DAMAGE CONTROL
+		4 - SCIENCE
+		5 - COMMS
+	"label" is a string that you want the button to display. The string must be
+	15 characters or fewer, or it will be truncated.  Returns 0 on success, nil on failure.
+
+enable_custom_button(player_id, screen);
+	Enables the specified custom button for the specified player.
+	"screen" is an integer as described above (see set_custom_button_label).
+	You can register a callback for the event "custom-button-press-event" to
+	react to custom button presses. Returns 0 on success, nil on failure.
+
+disable_custom_button(player_id, screen);
+	Disables (hides) the specified custom button for the specified player.
+	"screen" is an integer as described above (see set_custom_button_label).
+	Returns 0 on success, nil on failure.
+
+fire_missile(shooter_id, target_id)
+	Fires a missile from the location of shooter id homing on target_id
+	If either shooter id or target id do not match an existing object,
+	then nothing happens. Nothing is returned.
+
+regenerate_universe(random_seed)
+	Regenerates the universe as is done at the start of the game.
+	If random seed is -1, then the current random seed is re-used.
+	If random_seed is not -1, then this value is used as the new
+	random seed.
+
+set_variable(variable_name, new_value)
+	Allows setting runtime adjustable variables. You can also set these
+	from the demon console (Type "console" to toggle the console on, then,
+	"vars" to see a list of variables, then, e.g. "set max_player_velocity 500",
+	to set a variable, or e.g., "describe max_player_velocity" to see a description
+	of a particular variable.) Note: the value "DEFAULT" may be used for new_value
+	to set a variable back to its default value.
+
+demon_print(string)
+	Output a string to the demon console
+
+add_bounty(ship_id, crime, amount, starbase_id)
+
+	Add a bounty for the specified amount (number) for the specified ship_id (number)
+	and crime (string) redeemable at the specified starbase_id (number);
+
+	On success, 0 is returned. On failure, nil is returned.
+	Failure can happen if the ship_id is not the id of a ship, or if the starbase_id
+	is not the id of a starbase.
+
+x,y,z = random_point_on_sphere(radius)
+
+	Returns x, y, z coordinates of a random point on a sphere centered at 0,0,0
+	with the specified radius. Distribution is uniform.
+
+generate_character_name() -- returns a randomly generated character name
+generate_ship_name() -- returns a randomly generated ship name
+generate_name() -- returns a randomly generated name (suitable for e.g. planets or asteroids).
+
+ai_trace(id) -- enable AI tracing for the specified object id.  If id is less than zero,
+	or refers to a non-existent object, ai tracing is turned off.
+
+create_passenger(n, name, location, destination, fare) -- set a passenger's name, location,
+	destination and fare. Parameters:
+        n: the passenger number, which should be between 0 and 80.
+	name: is the name of the passenger, a string, no longer than 49 characters.
+	location: the ID of a starbase to move the passenger to.
+	destination: the ID of a starbase to which the passenger wants to travel.
+	fare: The fare the player should get upon delivering the passenger.
+
+set_passenger_location(n, location) -- sets passenger location
+	Parameters:
+	n: the passenger number (between 0 and 80, inclusive).
+	location: The ID of the starbase or player ship where the passenger should be located.
+
+get_passenger_location(n) -- gets passenger location
+	Parameters:
+	n: the passenger number (0 - 80).
+	Returns:
+	ID of the starbase or player ship where the passenger is currently located.
+
+set_planet_description(planet_id, description) -- set the description of a planet.
+	Parameters:
+	planet_id: number, the ID of the planet
+	description: string, the description you want. Up to 253 characters.
+
+set_planet_government(planet_id, government) -- set government of planet.
+	Parameters:
+	planet_id: number, the ID of the planet
+	government: number:
+		0 - "Anarchy",
+		1 - "Feudal",
+		2 - "Multi-Governmental",
+		3 - "Dictatorship",
+		4 - "Communist",
+		5 - "Confederacy",
+		6 - "Democracy",
+		7 - "Corporate State"
+
+set_planet_tech_level(planet_id, tech_level) -- set tech_level of planet.
+	Parameters:
+	planet_id: number, the ID of the planet
+	tech_level: number:
+		0 - "stone age",
+		1 - "iron age",
+		2 - "steel age",
+		3 - "silicon age",
+		4 - "positronic age",
+		5 - "space age",
+		6 - "interstellar age",
+
+set_planet_economy(planet_id, economy) -- set economy of planet.
+	Parameters:
+	planet_id: number, the ID of the planet
+	economy: number:
+		0 - "Rich Industrial",
+		1 - "Average Industrial",
+		2 - "Poor Industrial",
+		3 - "Mainly Industrial",
+		4 - "Mainly Agricultural",
+		5 - "Rich Agricultural",
+		6 - "Average Agricultural",
+		7 - "Poor Agricultural",
+
+set_planet_security(planet_id, security) -- set security of planet.
+	Parameters:
+	planet_id: number, the ID of the planet
+	security: number:
+		0 - low security
+		1 - medium security
+		2 - high security
+
+update_player_wallet(player_ship_id, delta_money) -- Add delta_money (which may be negative) to
+	the specified player ship's wallet.
+	Parameters:
+	player_ship_id: id of the player ship to affect
+	delta_money: the amount of money to add to the wallet (may be negative).
+
+too_close_to_other_planet_or_sun(x, y, z, limit) -- returns 1.0 if the given x, y, z are
+	coordinates within the given limit of another planet or the sun. This can be useful
+	when populating the universe with planets to avoid placing planets too close to each
+	other or to the central star.
+
+play_sound(player_ship_id, ogg_file) -- Plays a "one shot" sound on any terminals of the
+	specified player ship which have the SOUNDSERVER role. Note, only one such sound
+	can play concurrently. If you attempt to play a second sound before the first
+	has finished playing, the second sound request will be ignored. The sounds files
+	must reside within the asset directory (by default, share/snis).  Returns 0.0 on
+	success, nil on failure.
+
+	Example:
+		play_sound(player_ship_id, "sounds/red-alert.ogg");
+
+set_red_alert_status(ship_id, status) -- sets the red-alert status for the specified ship
+	to the specified status (1 = RED ALERT ON, 0 = RED ALERT OFF);  Returns 0 on success,
+	nil on failure.
+
+destroy_ship(ship_id)
+	Explodes the given ship creating a derelict and ejecting any cargo contained in
+	the ship. Useful for testing scenarios that involve the player destroying a ship,
+	emulating sabotage of ships, etc. This function is for destroying NPC ships only,
+	not player ships. Returns 0.0 on success, nil on failure.
+
+add_torpedo(x, y, z, vx, vy, vz, firing_ship_id)
+	Adds a torpedo at (x, y, z) with velocity (vx, vy, vz) fired from
+	ship firing_ship_id.  Returns the ID of the torpedo on success, nil
+	on failure.
+
+set_starbase_factions_allowed(starbase_id, faction_mask)
+	Sets the faction mask for the given starbase.  The faction mask is
+	a bit field, with each bit indicating whether a particular faction is
+	permitted to dock.  The faction mask is only honored if the server side
+	tweakable variable "docking_by_faction" is non-zero (e.g. via
+	set_variable("docking_by_faction", 1);)  Returns 0 on success, nil on
+	failure.
+
+generate_cipher_key()
+
+	returns a 26 character simple substitution cipher key (See scipher.h).
+
+encipher_string(string, cipher_key)
+
+	Given a string and a cipher key (from e.g. generate_cipher_key()).
+	returns an enciphered string.
+	NOTE: THIS IS NOT YET IMPLEMENTED.
+
+get_faction_name(faction_number)
+	returns the name of the given faction, or nil, if faction_number is out of range
+
+computer_command(player_ship_id, computer_command)
+	player_ship_id is the id of a player controlled ship.
+	computer_command is a string that you wish to be executed on
+	the ship's computer, much as if it were typed in from COMMS.
+
+	Note: Normally, for computer commands issued from a terminal,
+	the computer's voice will go back to that terminal. For lua
+	scripted computer commands, there is no terminal. So one must
+	be chosen. The preference is to choose a terminal supporting
+	the text to speech role, sound server role, and main screen
+	role.  There is no "correct" answer though. If no suitable
+	terminal can be found, then it will choose an unsuitable
+	terminal, and you may not hear whatever the computer
+	might say in response to your command.
+
+issue_docking_clearance(starbase_id, ship_id, starbase_name, comms_channel)
+	grants the player ship identified by ship_id (number) permission to dock at the
+	starbase identified by starbase_id(number) . starbase_name (string) is used
+	in comms transmissions to tell the player permission to dock has been granted,
+	and comms_channel is the channel on which this information is transmitted
+	(if unsure, use 0 for channel).
+
+terminal_effect(ship_id, role, effect)
+	Causes a player's terminal to execute a special effect.
+	The effects are:
+
+	0: Warp Limbo
+	1: Terminal Reboot
+	2: Wormhole Limbo (currently exactly the same as Warp Limbo)
+
+	The roles are:
+
+	main view = 1
+	navigation = 2
+	weapons = 4
+	engineering = 8
+	science = 16
+	comms = 32
+	demon screen = 64
+	damage control = 128
+
+	They may be bitwise OR'ed together.  All the above roles would be 0xff
+
+	Note: MAIN SCREEN and WEAPONS do not reboot (it's too annoying and non-sensical).
+
+comms_menu_create("menu text", "callback_function");
+
+	Creates a new comms menu and returns the menu number.  At most 10 such menus may be
+	created, and the numbers return will be between 0 and 9.  The menu text is newline
+	delimted.
+
+	Example:
+
+
+		menu = comms_menu_create(
+			"1. item one\n" ..
+			"2. item two\n" ..
+			"3. item three\n" ..
+			"4. item four", "menu_callback_function");
+
+		function menu_callback_function(choice, ship_id)
+			demon_print("Choice " .. tostring(choice) .. " made by " .. to_string(ship_id));
+			comms_menu_destroy(menu);
+		end
+
+comms_menu_invoke(menu_number, player_ship_id)
+
+	Invokes a COMMS menu previously create via comms_menu_create();
+	When a choice from the menu is made by the COMMS officer, the callback_function
+	is called with the choice as a parameter, an integer with 0 being the first item
+	in the menu.
+
+	Example:
+
+	menu = comms_menu_create("0. item zero\n1. item one\n2. item two");
+
+	function menu_callback(n, ship_id)
+		io.write("User " .. tostring(ship_id) .. " chose item " .. tostring(n));
+		comms_menu_destroy(menu);
+	end
+
+	comms_menu_invoke(menu, "menu_callback");
+
+comms_menu_destroy(menu)
+
+	Destroys a COMMS menu previously created with comms_menu_create();
+
+
+INTERACTIVE FICTION:
+
+There is a Lua library to help with creating Zork-like interactive fiction missions controlled by
+COMMS in share/snis/luascripts/MISSIONS/lib/interactive-fiction.lua  You can see a simple example of
+using this library in share/snis/luascripts/TEST/TESTINTFIC.LUA and a more complicated example in
+share/snis/luascripts/MISSIONS/STURNVULF.LUA  You can run these from the command line, e.g:
+
+	lua share/snis/luascripts/TEST/TESTINTFIC.LUA
+
+Or from the demon screen
+
+If you run them from the console, the parts of the scripts which interact with SNIS will obviously
+not run, but the interactive fiction portion will still work. TODO: Document this interactive-fiction
+library better.
+
+NOTE: Your lua scripts must not sleep, call any function which blocks, or require excessive
+long running calculations (nothing more than a few hundredths of a second) because the lua
+scripts are called from the main thread and if the scripts block, the entire game will block.
+

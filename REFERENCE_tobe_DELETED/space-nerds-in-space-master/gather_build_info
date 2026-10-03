@@ -1,0 +1,75 @@
+#!/bin/sh
+
+if [ "$1" = "-DWITHVOICECHAT=1" ]
+then
+	with_voice_chat="COMPILED WITH VOICE CHAT ENABLED"
+else
+	with_voice_chat="COMPILED WITHOUT VOICE CHAT FEATURE"
+fi
+
+machine=$(uname -m) > /dev/null 2>&1
+if [ "$?" != "0" ]
+then
+	machine="unknown-machine"
+fi
+
+os=$(uname -o) > /dev/null 2>&1
+if [ "$?" != "0" ]
+then
+	# check for mac OSX (this could probably be done better)
+	uname -a | grep '^Darwin ' > /dev/null 2>&1
+	if [ "$?" = "0" ]
+	then
+		os="Darwin"
+	else
+		os="unknown-os"
+	fi
+fi
+
+diffcount="0"
+git_hash=$(git rev-parse HEAD) > /dev/null 2>&1
+if [ "$?" != "0" ]
+then
+	git_hash="unknown-git-hash"
+else
+	diffcount=$(git diff 2>&1 | wc -c)
+	if [ "$?" != "0" ]
+	then
+		diffcount='?'
+	fi
+fi
+
+if [ "$diffcount" = "0" ]
+then
+	diffsummary=""
+else
+	diffsummary=$(git diff --stat | tail -1 | sed -e 's/^ *//')
+fi
+
+# today=$(date '+%Y-%m-%d %H:%M:%S')
+# if [ "$?" != "0" ]
+# then
+#	today="unknown"
+# fi
+
+endianness=$(bin/check-endianness)
+if [ "$?" != "0" ]
+then
+	endianness="unknown-wordsize unknown-endianness"
+fi
+
+protocol_version=$(awk '/SNIS_PROTOCOL_VERSION/ { print $3; }' < snis.h | sed -e 's/"//g')
+
+cat << EOF
+#ifndef __BUILD_INFO
+#define __BUILD_INFO
+
+/* This file is machine generated */
+#define BUILD_INFO_STRING1 "v. " SNIS_VERSION " - $endianness $machine $os"
+#define BUILD_INFO_STRING2 "$protocol_version $git_hash"
+#define BUILD_INFO_STRING3 "$with_voice_chat"
+#define BUILD_INFO_STRING4 "SPACE NERDS IN SPACE v. " SNIS_VERSION
+#define BUILD_INFO_STRING5 "$diffsummary"
+
+#endif
+EOF

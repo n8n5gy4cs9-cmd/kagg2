@@ -1,0 +1,187 @@
+Here be ideas about what might or might not be added into the game
+at some point.
+
+Thu 01 May 2025 05:38:22 AM EDT
+-------------------------------
+
+I wonder if it might be possible to leverage ffmpeg to make a quick and dirty
+implementation of the typical star trek video call from bridge to bridge.  For
+example, this will record video to stdout, rapidly encoded suitable for
+streaming (I think):
+
+ffmpeg -f v4l2 -i /dev/video0 -f pulse -i default -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -b:a 128k -f flv -
+
+Could use popen() read from that, blast it to snis_server, snis_server could
+blast it to a remote client, and vice versa, and voila, a video call is
+implemented.
+
+There are C APIs too, if quick and dirty is not quick enough or too dirty,
+https://ffmpeg.org/doxygen/5.1/index.html
+
+
+Sat 01 Mar 2025 04:42:28 PM EST
+-------------------------------
+
+Currently we have nine solarsystems defined, requiring 550M in PNG assets:
+
+$ du -h
+86M	./zaurno
+71M	./varco
+50M	./tau-scorpii
+89M	./karado
+53M	./zolon
+53M	./sirius
+41M	./polaris
+32M	./default
+77M	./quidgebo
+550M	.
+
+(On that front, what if we switched to a different image format, like JPEG
+or QOI or something... could drastically cut down on the size as PNGs aren't small.
+
+How could we get more solarsystems without more assets? We could have ephemeral
+(or fake, or some other descriptor) solarsystems without assets, which either
+re-use the existing assets, possibly modifying colors via shaders, or maybe
+develop some procedural shaders or on-the-fly asset generation fast enough for
+warp gate travel (How? Not easy.)  This would allow for a greatly expanded
+universe (though maybe a not very interesting universe).  Maybe we don't need
+such a thing.
+
+Wed Jun 30 02:29:08 EDT 2021
+----------------------------
+
+Might be a good idea to add ipv6 support. In some places, ipv4 from ISPs is apparently
+somewhat scarce and expensive (e.g. Brazil) and this situation is not likely to improve
+for ipv4 with time. Plus, it might just be an interesting problem to work on.  snis_server,
+ssgl_server, and snis_multiverse would have to support both ipv4 and ipv6 concurrently.
+Clients could, I suppose be ipv4 or ipv6. Not sure if it makes sense for snis_client to be
+both ipv4 and ipv6, using one or the other with different snis_servers.  I think not.
+I think the snis_client should probably be ipv4 XOR ipv6, decided at initialization,
+either by user choice, or by what interfaces are configured (i.e. if there is only an
+ipv6 interface then use ipv6.)
+
+----------------------------
+Sun Sep  2 08:25:58 EDT 2018
+
+snis_text_window...  the text should be cut-and-pasteable with the mouse.
+This shouldn't be too hard.  We know where the text is displayed, and we know
+where the mouse is.  Drag events can copy the text to a buffer. Some code around
+here might be instructive:
+https://github.com/smcameron/gneutronica/blob/master/gneutronica.c#L1198
+
+It should be possible to turn on logging of the client and server consoles,
+so whatever is in the console is logged to stderr/stdout as well.
+
+In earthlike, instead of craters deforming the height map, how about
+deforming the normalmap directly? I think this might solve the
+overlapping crater problem.
+
+-------------------------
+
+** SHIP UPGRADES? **
+
+At starbases, you could upgrade your ship.  Ship
+upgrades could be accomplished by initially depriving the ship of
+various modules on the DAMAGE CONTROL screen, which could be bought.
+It might also be possible to start the ship off with only a single
+laser cannon (instead of current dual laser cannons) and no torpedo
+system (Damage control, again), which could be upgraded at starbases
+for money.  Maybe even add a second weapons turret (requiring another
+player to man it) on the bottom of the ship for a price.
+
+Allow comms to try to extort NPC ships to release their cargo, pay tribute,
+or... something like that.  Allow transfer of funds between player ships.
+*maybe* funds transfer between NPC ships and player ships. (what about
+derelicts -- perhaps bearer bonds might be found aboard, or... something?)
+
+*** CHECKPOINT RESTART
+
+Some way to checkpoint the universe state and restart it.  This is
+hard for two reasons:  player state, and lua state. The lua state is
+the harder of the two.  Lua essentially makes this impossible to do
+without some sort of wizard level fuckery.
+
+*** PIRATE SHIPS
+
+Ships could have a pirate mode in which they apprehend other ships (incl. player
+ships) and demand they eject cargo. They could have a bomb they attach to the
+ship which they detonate if the victim does not comply (or just shoot them). The
+pirate ships could band together in a fleet to have more firepower. Q: How does
+the player escape from attached bomb without giving up cargo? (Bomb model could be
+implemented via BLOCK_FORM_CAPSULE).
+
+Ships could have some history and have captains with some proc gen history, and
+be "registered" at particular planets, etc. Captains/ships could be "wanted" in
+various planets a la Elite. (partially implemented -- some ships have bounties now).
+
+Maybe player ships can engage in piracy as well, having some way to hail ships
+and demand cargo ejection, maybe be able to use the mining robot to plant a bomb
+on other ships?
+
+
+*** AWAY TEAM(S) ***
+
+1. COMMS could summon a team led by an NPC, "Cmdr. Winston," or whatever
+   to the transporter room.
+
+2. Science could select an object, or a planet + longitude + latitude
+   and beam the away team down to the planet.
+
+3. Science's chosen longitude and latitude could show up on the planet
+   surface in navigation.
+
+4. Beam up/down only works if the ship is near to the lat+long.
+
+5. Comms can communicate with the away team (similar to mining bot, I guess.)
+
+6. Away team has "transponders" that have string "IDs" that you can "lock on to"
+   to beam them up/down.
+
+7. Away team can put these transponders onto cargo containers
+   that can then be beamed up/down.
+
+8. Lua scripts can act as the away team, sending/receiving comms to do things
+   (similar to the robot in STURNVULF mission.)
+
+9. Maybe away team could be beamed to other ships or to starbases to do stuff.
+
+10. Science could have sliders to select longitude/latitude and the targeted
+    area can be highlighted on globe on science and on navigation.  maybe
+    extra scanning info (e.g. transponder tags?  Minerals?  lifeforms?
+    macguffins?)
+
+11. Away teams could be killed or lost, or left behind, or bring passengers
+    aboard.
+
+12. NPC "away teams" could contact the ship (via comms) from the planet surface
+    requesting to be beamed aboard, or whatever.
+
+13. Need to write some Lua mission using these ideas to see what could be done.
+
+-------------------------------
+Tue 20 Jun 2023 06:57:05 AM EDT
+
+*** Build starbases out of blocks ***
+
+Currently, starbases are each made of a single model (STL or OBJ), with some docking
+ports (also a single model) glued onto them.  There is no real collision detection
+between ships (player or non-player) and the starbases (apart from the docking ports).
+
+Starbases could be built out of "blocks" (OBJTYPE_BLOCK), though the blocks would
+have to be improved and more types of blocks would need to be added.  Currently
+blocks only have one of two textures, and there are only a few types of blocks
+(cuboid, sphere and capsule).  Would need to allow more textures, and more shapes
+(cylinder and ring, at least.) This would allow proper collision detection between
+the player ship and the starbases, and allow for more elaborate and larger
+starbases.  For collision detection of new shapes, take a look at
+https://iquilezles.org/articles/distfunctions/ of course.
+
+Alternately (and probably better), starbases could be modeled in the usual way,
+but supplemented with "invisible blocks" used only for collision deteciton
+(this type of thing is called a "collider", in other engines, I think).
+
+It would be nice if there were a better way to construct composite objects of
+multiple blocks than what we have now.  What we have now is very primitive,
+cumbersome, and mentally taxing... see share/snis/luascripts/MISSIONS/BIGSHIP.LUA
+for example.
+

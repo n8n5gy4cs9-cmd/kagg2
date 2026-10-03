@@ -1,0 +1,130 @@
+#!/bin/sh
+
+echo
+echo
+echo The quickstart script is obsolete and superseded by snis_launcher.
+echo Please use snis_launcher to start SNIS instead of using quickstart.
+echo
+echo -- steve
+echo
+echo
+exit 1
+
+if [ "$(id -u)" = "0" ]
+then
+	echo "You are root. Do not run this script as root." 1>&2
+	exit 1
+fi
+
+# stop any existing processes first
+./killem.sh
+sleep 0.25
+
+if [ "$SNIS_SOLARSYSTEM" = "" ]
+then
+	SNIS_SOLARSYSTEM=default
+fi
+
+uname -a | grep '^Darwin ' > /dev/null 2>&1
+if [ "$?" = "0" ]
+then
+	OSX="1"	
+else
+	OSX=0
+fi
+
+usage()
+{
+	echo "usage: quickstart star-ship-name password" 1>&2
+	echo "example:" 1>&2
+	echo "./quickstart Enterprise tribbles" 1>&2
+	exit 1
+}
+
+shipname="$1"
+if [ "$1" = "" ]
+then
+	shipname="spacenerd"	
+fi
+
+password="$2"
+if [ "$2" = "" ]
+then
+	password="spacenerd"
+fi
+
+# start the lobby server
+ssgl/ssgl_server
+
+sleep 0.25
+
+start_multiverse()
+{
+	if [ ! -d ./snisdb ]
+	then
+		echo "./snisdb/ does not exist, creating directory." 1>&2
+		mkdir ./snisdb
+		if [ "$?" != "0" ]
+		then
+			echo "mkdir ./snisdb failed."
+		fi
+		if [ ! -d ./snisdb ]
+		then
+			echo "Directory ./snisdb does not exist, snis_multiverse will not run without it, please create it." 1>&2
+			exit 1
+		fi
+		echo "Created ./snisdb for snis_multiverse" 1>&2
+	fi
+	./bin/snis_multiverse -a -l localhost -n nickname -L narnia -e "$SNIS_SOLARSYSTEM" > snis_multiverse_log.txt 2>&1
+	echo "snis_multiverse died, status was $?" 1>&2
+}
+
+start_multiverse &
+
+sleep 0.25
+
+get_solarsystem_name()
+{
+	if [ -d share/snis/solarsystems/"$1" ]
+	then
+		echo "$1"
+	else
+		echo "default"
+	fi
+}
+
+uppercase()
+{
+	echo "$1" | tr '[a-z]' '[A-Z]'
+}
+
+SS1=$(get_solarsystem_name default)
+
+./bin/snis_server -l localhost -L $(uppercase "$SS1") --enable-enscript -m narnia -s "$SS1" > snis_server_log."$SS1".txt 2>&1 &
+
+sleep 2.50
+
+# Some common aspect ratios.  Note: the game was designed on a machine
+# with a 16:9 aspect ratio.  Other aspect ratios may have some UI issues.
+#
+# ASPECT_RATIO, if unspecified, will figure it out from window manager
+ASPECT_RATIO="${ASPECT_RATIO:-}"
+# ASPECT_RATIO="5:4"
+# ASPECT_RATIO="4:3"
+# ASPECT_RATIO="16:10"
+# ASPECT_RATIO="16:9"
+
+if [ "$ASPECT_RATIO" != "" ]
+then
+	ASPECT_RATIO_ARG="--aspect-ratio $ASPECT_RATIO"
+else
+	ASPECT_RATIO_ARG=""
+fi
+
+# start the game client and server in quickstart mode
+# ./bin/snis_client $ASPECT_RATIO --fullscreen --solarsystem "$SNIS_SOLARSYSTEM" --quickstart --starship "$shipname" --pw "$password" $@
+./bin/snis_client $ASPECT_RATIO_ARG --fullscreen --starship "$shipname" --pw "$password" \
+	-j '/dev/input/by-id/usb-Thrustmaster_T.16000M-joystick' \
+	-j '/dev/input/by-id/usb-Thrustmaster_TWCS_Throttle-joystick' $@ > snis_client_log.txt 2>&1
+exit $?
+

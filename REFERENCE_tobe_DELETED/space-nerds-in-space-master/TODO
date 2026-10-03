@@ -1,0 +1,433 @@
+Too much to list, but here's a list anyway:
+
+* Sound
+    More and better sound effects
+    Music (why? Player can run their own music separately.)
+
+* Engineering screen
+    make comms power do something
+	This is somewhat hard, because currently comms works by a kind of publish
+	subscribe method. You tune your radio to a channel number (subscribe) and
+	transmit messages on a channel (publish). There is currently no notion of say
+	"distance" that a message travels. "Private" messages between two parties are no
+	such thing, a random channel is chosen (among a very large number of channels)
+	so collisions are unlikely but possible. To implement impace of comms power and
+	message travel distance, each message would need to be tagged with an origin,
+	and then each message would need to be say, pre-distorted or suppressed based
+	on (say) comms power of transmitter and on distance between message origin and
+	message receiver. Which I guess is not that hard, but we could not use the
+	generic send_packet_to_all_clients() for the broadcast channel as we do now,
+	and send_packet_to_all_bridges_on_a_channel would need to be customized.
+	Consider carefully how say, distorting messages, etc. might merely cause
+	frustration without being fun, in the name of some quest for "making some kind
+	of sense." Maybe binary works/doesn't work based on power and range alone might
+	be preferable to message distortion?
+
+	There is now an optional antenna system (turned off by default).
+	For distant comms targets, comms only works if the antenna is pointed
+	at the target.  You can aim the target at coordinates, and it will attempt
+	to keep the antenna auto aimed at the target, however it can only aim the
+	antenna in a hemisphere towards the front of the ship.  Any distant comms
+	targets outside the hemisphere to the front of the ship cannot be communicated
+	with.  It's not clear that this is any fun.
+
+
+    Some sliders set only a maximum, while others control power usage
+	this is confusing.  Figure something out to make it less confusing.
+	(partially done -- fuzzing the power output kind of makes the
+	situation more obvious.)
+
+    Make the dials at the top of the screen (AMPS, VOLTS, TEMP) more relevant.
+
+    Just for fun, Add some kind of "Reverse the polarity" button(s) (maybe on
+    damage control) that does something useful under some circumstances.
+
+* Communications screen
+    Starbase comm stuff -- mostly done, there are undoubtedly more things that could
+	be added. Probably need a way to shut off annoying messages about being attacked
+	constantly for scenarios.
+
+	Might be nice to have audio comms radio chatter when near a starbase.
+
+    Enemy ship comm monitoring -- Right now there is no enemy comms to monitor. Seems
+	like there should be something for comms to do here though. Do not have any very
+	good ideas about how it should work though.
+    Friendly ship stuff
+    bridge-to-bridge comm
+	I think this is done. If two bridges are on the same channel, then they
+	can communicate.
+    Take damage and power into account
+	Right now, power of comms systems does nothing -- it works regardless
+	This should probably have some ill effect.  One idea: based on power
+	and damage, some fraction of characters is garbled. If high power and
+	low damage, 99.9% of characters go through unmangled, as power drops and
+	damage increases, a higher and higher fraction of characters is garbled.
+	Not very realistic, but might provide a workable degradation.
+	Other ideas?  Range limitations?
+    Allow submitting natural language queries to 'the computer'
+	This is mostly done with speech recognition, even. There are doubtless things
+	the computer cannot understand, but it can already understand many things.
+    intercept chatter between enemy ships
+    ??? need to figure out what the hell the comms screen is good for.
+
+* Navigation screen
+
+* Weapons screen
+     Improve joystick support.  Right now, weapons is probably unusable with a
+	joystick controller.
+     There are cases where damage from lasers is handled in the same way as
+	damage from torpedoes. That is not how it should work.
+
+* Science station
+  * Allow scanning of planet surface
+  * Currently the science beam scans in the XZ plane, rotating about the
+    Y-axis, in world cooordinates.  The orientation of the ship has no
+    effect on science.  This seems weird.  However, given the weirdness of
+    the current SRS with the "3D projected onto 2D while preserving distance"
+    thing that we've got, I'm not sure fixing this is a good idea.
+
+* Add some kind of transporter control which interacts with science
+  scanning of planet surface/scanning of ships to allow beaming up/down
+  of "passengers" or cargo.
+
+* Augment the tractor beam with a stasis field to hold ships steady
+  and allow player to demand ships eject their cargo.
+
+* Setup screen
+  Try to make it more intuitive for people who are seeing it for
+  the first time ever.
+
+* write some kind of guide to hacking, to make it easier for others to
+  contribute to this codebase.
+  Signficantly done, though incomplete. See doc/hacking-space-nerds-in-space.html
+
+* computer-controlled-ships
+  loads of AI improvements and basic functionality
+  remains to be done.
+  Avoid going inside/through planets.  This is mostly done
+  though I still see a ship crash into a planet every once it a blue moon
+  * it should be the case that each ship model is associated with a particular
+    faction.
+  * It should be the case that each ship model is noticably different in capabilities
+    and science should have some insight into this.  Some ships should be noticeably
+    more difficult or easier to destroy.
+  * Allow ship to ship docking?
+  * There are still cases where ships get into strange "flipping" states, maybe while trying
+    to traverse around planets. (This is mostly fixed, and was due to NaNs mostly).
+  * There should be some kind of pirate ships, where the pirates contact the player via
+    Comms and demand cargo be ejected, fight if not, etc. or maybe do this after damaging
+    the player "enough". Maybe use specialized weapon to disable warp.  Details of how to make
+    this work seem elusive, and how to make it so that all such encounters do not seem "samey"
+    is unclear.  Maybe different ruses to lure in the player (e.g. various forms of distress
+    calls) which brings us to...
+  * There should be actual distress calls from NPC ships that the player can help
+    out with, e.g. perhaps towing a ship to a starbase, picking up personnel in
+    need of medical attention and taking them to a starbase, bringing fuel, etc.
+
+* Add proximity mines
+* Add missiles of some kind (Done.  Although they are kind of too powerful.)
+* Add Lua controllable macguffins of some kind
+
+* starbase behavior
+  Allow suppressing default behavior of crying about getting attacked
+  all the time and spamming the comms screen.
+    DONE: Lua scripts can now do:
+    set_variable("SUPPRESS_STARBASE_COMPLAINTS", 1);
+    or it can be done via the DEMON screen.
+
+* anomalies, macguffins etc. need to be implemented
+* Possibly have some way of having special commodities.
+  For example, Tradewars had corbomite, and if a ship took damage
+  while carrying corbomite, there was a chance the corbomite could
+  "go off", and hence there was the notion of a "corbomite trap", in
+  which a honeypot ship loaded with corbomite was left around and
+  anyone who attacked it got blown up. Some general way to add
+  special behaviors like this to commodities seems like a good idea.
+  Might be cool to allow a mining bot to carry a cargo container filled
+  with explosives over to a ship and blow it up, or leave it near the
+  ship, and and then the player can shoot it, setting it off. Another
+  idea for a special commodity: remotely controllable black hole
+  generator.
+
+* 3D out the window view
+  Fade distant objects to black
+  Implement shadow mapping (very very hard.)
+	  http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-16-shadow-mapping/
+	  https://gamedev.stackexchange.com/questions/73851/how-do-i-fit-the-camera-frustum-inside-directional-light-space
+	  https://en.wikipedia.org/wiki/Shadow_mapping
+  Implement PBR (very very hard).
+
+* comms screen:
+
+* Damage control screen:
+  Make the various components of the systems less generic
+  Make damage control a bit less useless
+  Add "hull integrity" as a thing.  Right now, when shields get to zero,
+    the ship explodes.  Really, hull damage and shield damage should be
+    separate things, and hull damage should be the thing that blows the
+    ship up, not shield damage.
+
+* Need sound for wormhole travel
+* I think the universe needs to be bigger, you can see too far out
+  the main screen relative to the instruments, size of the universe.
+  Or else maybe some kind of fog.
+* joystick support for weapons and nav, and maybe others.
+* trading of stuff mined from asteroids at stations.
+* Need to be able to checkpoint-restart universe state on server side
+  (how do lua scripts fit into checkpoint restart? Currently Lua ruins
+  this.)
+* more lua event callbacks, some mission scripts done with lua
+  basically, flesh out the lua scripting system.
+* Moar mission scripts!
+* Remove use of "heading" field in snis_entity
+  I think it is used by damcon, and by 2D demon screen though, so
+  maybe not.
+* make tractor beam work again/better.
+
+LOBBY
+* Allow multi-homed snis_server to work.  Currently only one ip addr is known
+  to the lobby, so if machines are coming from multiple interfaces, it doesn't
+  really work.
+* Allow lobbyless operation, user configurable port for snis_server, and client
+  able to connect to user configureable ip and port.
+
+NICE TO HAVE:
+
+* Make the universe more realistic in a variety of ways (but not too realistic,
+  i.e. if the ship is the nominal size of The Enterprise, then Saturn would be
+  bigger than the current known in-game universe -- obviously that is too much
+  realism.   Also, have planets orbiting stars, stations orbiting planets, etc,
+  instead of what we have now, which is just stuff randomly sprinkled around.
+
+* (This might be a bad idea) Allow solarsystems to have real-time procedurally
+  generated planet and skybox textures (this would be hard, and not as good as the
+  offline generated textures). This would enable the autowrangling of snis_multiverse
+  to produce the illusion of a really huge galaxy with hundreds or thousands of
+  star systems.
+
+* Make art assets live on server and be transmitted to clients on demand.
+  (Sorta kinda done. make update-assets grabs assets from spacenerdsinspace.com
+  but not on-demand.)
+
+* Flesh out warp core ejection mechanic
+
+* Make computer better at understanding waypoints.
+  It now understands "set a course for waypoint X", but doesn't understand
+  "set a course for the nearest waypoint", or "set a course for the selected
+  waypoint", or "how far to waypoint blah"
+
+* Make the central star shader better. Right now it is simply a
+  dumb billboard, which looks ok, but there it looks unnatural as
+  the star comes around the limb of a planet, etc. there's no sense
+  of brightness. See for example: https://www.seedofandromeda.com/blogs/51-procedural-star-rendering
+  The sunspots, corona, etc are overkill, but the lens flare, the way
+  it comes around the edge of a planet, etc, all look really good.
+
+* Make black hole shader better.  Right now it's just a billboard with a
+  fuzzy black disc on it.
+
+* Add a Real Time Strategy game into SNIS.
+  Partially done.  But a long way to go before it's reasonable.
+  (This was probably a bad idea.)
+
+  This will give COMMS station some things to do. I envision it to work
+  something like this.
+
+  There will be two MAIN PLANETS, each belonging to two main OPPONENTS.
+
+  To win the game, conquer opponents MAIN PLANET. MAIN PLANET has some
+  hit points that cannot be replenished. Once depleted to zero, the game
+  is over. So it is important to defend main planet.
+
+  There will be some subsidiary planets and starbases between the two
+  MAIN PLANETS. Starbases can build UNITS. Each starbase may be controlled
+  by either opponent, or be neutral.  Players can request starbases that
+  they control to build units, for some cost. The more starbases a player
+  controls, the faster they accumulate money for building units.  To capture
+  a starbase, a player must occupy it with four units. Once it is occuppied,
+  it may be taken over by another player if that player occupies it with 4 units.
+  There will be several types of units, tentatively:
+
+  * Troop ship: These are the only units which may occupy a starbase.
+    They are cheap, but weakly armored and slow, and can inflict minimal
+    damage.
+  * Gunship: heavily armored, slow, can inflict medium damage
+  * Scout: light, fast, light damage.
+  * Turret: Fixed position, heavy fire, good for defense.
+  * Resupply ship: slow, light armor, can repair and replenish other ships
+  * Others???
+
+  Each unit can be given ORDERS (not all units can take all orders):
+
+  (tentative):
+  * Attack MAIN PLANET
+  * Occupy nearest starbase (troopship only)
+  * Patrol area
+  * Escort
+  * Attack nearest enemy
+  * Move to destination
+
+  So COMMS station will:
+
+  1. Direct STARBASES to manufacture UNITS.
+  2. Give ORDERS to UNITS.
+
+  The rest of the crew of the ship can drive around and help
+  the UNITS accomplish their goal by wreaking destruction upon
+  enemy units.
+
+  It may be that COMMS POWER restricts range of communication?
+
+* Improve ship movement.  Currently ship movement can be a bit crappy.
+  For example, sometimes ships will come to a complete stop on their
+  way somewhere for a period of time for no real reason before continuing
+  on their way.  Also, the way the orientation of ships is figured is based
+  on which way they are moving, where it should probably be the reverse, which
+  way they move should be determined by orientation, and to change direction,
+  they should first change their orientation.  Also, they could fly a little
+  more "cinematically", that is, like fighter planes, (maybe similar to Elite)
+  with more pitching and rolling and less yawing. Particularly,
+  ai_ship_travel_towards() and ai_ship_add_movement_variety() in snis_server.c
+  could be improved (or replaced) with something better. Those alone do not
+  touch the orientation problem though, so there's more to it than that.
+
+* Finish/Improve Space Monster behavior.
+
+  Currently, space monsters have a few behaviors. They have a notion of hunger,
+  anger, and fear. If they are not hungry, angry, or fearful they will seek out
+  another nearby spacemonster and kind of randomly move about if another space
+  monster is close enough, or move towards the nearest space monster if the nearest
+  space monster is too far away. So you tend to see spacemonsters in pairs or in
+  groups of a few due to this. Spacemonsters will become angry at nearby ships and
+  attack them. If spacemonsters are not very healthy they may become fearful and
+  flee from ships (i.e. after taking some damage.) If a spacemonter becomes hungry
+  it will seek out some asteroids to feed. It doesn't eat the asteroids, but it
+  (presumably) eats something on the asteroids. That is about the current (circa
+  March 2018) extent of the behavior. Maybe they should do something else (e.g.
+  be influenced by the exterior lights or thruster activity of your spaceship...
+  maybe you could avoid attacks by shutting down thrusters and lights?) Noises?
+  Attempts to communicate? Other intersting behaviors?
+
+  Currently when destroyed, space monsters simply explode, leaving no carcass.
+  Leaving some carcass would probably be better.
+
+* Improve black hole behavior.
+
+  Gravitational attraction as currently implemented is kind of ... meh.  Not very
+  black-hole-like. Rendering of black holes is currently crap.
+
+* Add more special things, like comets, anomalies of some kind, just generally
+  interesting stuff of one sort or another.  I.e., go all Dwarf Fortress on this
+  thing and just program shitloads of custom variety.
+
+* Make nebula more interesting.  Right now hiding in nebulas doesn't really work
+  very well, because visually, you can kind of see right through them.
+  I do not recall exactly what happens on science regarding things which are inside
+  nebulas.  Also, nebulas are kind of small, and few and far between, so, the hiding
+  place is rather obvious. https://www.youtube.com/watch?v=ifmRgQX82O4&t=0m57s
+  Maybe make nebula block science with ray-sphere intersection test.
+
+  Look into raymarching signed distance fields (as if I know what that is)
+  as a way of rendering nebula.  See: http://spaceengine.org/news/blog161008/
+  See: http://iquilezles.org/www/articles/distfunctions/distfunctions.htm
+  for a load of signed-distance-field functions for various primitives.
+
+* Get better models, or properly uv-map and texture models we do have. Scrap the
+  more terrible models.
+
+* Add support for DMX lighting. Started on this in snis_dmx.h and snis_dmx.c,
+  however it is not tested with any hardware and probably doesn't work. And that
+  is just a bare library to do something with DMX, the game doesn't even link
+  those files in yet.
+
+* Add support for more joysticks.
+
+* Add support for toggle switches (as opposed to momentary switches).
+  I.e. HOTAS warthog has some toggle (non-momentary) switches that are either on,
+  off, or in one of several positions.
+
+* Consider that some controls might well be served by both buttons and axes.
+  For example, you might wish to assign an axis to control the warp level slider
+  on the navigation screen, but mostly, people won't have enough axes on their
+  joystick to devote one for that purpose, so may wish to have buttons to nudge
+  the warp slider up and down.  That is, it should be possible to control sliders
+  with both buttons AND axes at the same time. Currently this is not the case.
+
+* Consider building some hardware controllers for each station and fleshing out
+  the code for dealing with such hardware. I have started learning Kicad and thinking
+  about building some arduino based stuff since arduino is easy. This looks like
+  a good way to make the panels look good: https://imgur.com/a/DyQZL
+
+* Consider allowing clients to fetch files from the server. That is, they could
+  look locally for files, and if not found, download the from the server.  There
+  are a number of problems to solve for this to work. 1) Typically the client wants
+  to load a bunch of files before it even contacts the server. 2) If I try to do it
+  with the existing opcode system, then it is asynchronous, and I have to have
+  request identifiers so that I can connect up the response with the request in the
+  client, and the client thread has to go to sleep and be woken up when the tranfser
+  is done somehow. Not insurmountable, but seems like a lot of work, and doesn't help
+  with problem 1. Maybe easier to just set up a known web server someplace hosting the
+  data and set up a new connection per request.
+
+  The idea would be, instead of open(), and fopen(), use open_and_fetch(), and
+  fopen_and_fetch(), and these would attempt a local [f]open(), and if that doesn't
+  work, fetch the file, then re-do the [f]open(). That way client installation should
+  be simpler, and scenarios could get their files distributed on-demand.
+
+* The client currently knows many demon screen commands and many of them are implemented
+  with custom opcodes sent to the server. Recently, server-side builtin demon commands
+  have been implemented, and many of these client-side commands and opcodes could be replaced
+  by server-side builtins.  This should probably be done wherever possible. See "demon_cmd_def"
+  variable in snis_client.c.
+
+* Replace god-awful libpng entirely with gtk stuff.  Gtk knows how to read png files already.
+  E.g. use gdk_pixbuf_new_from_file(). See https://developer.gnome.org/gdk-pixbuf/stable/gdk-pixbuf-The-GdkPixbuf-Structure.html
+  and https://developer.gnome.org/gdk-pixbuf/unstable/gdk-pixbuf-File-Loading.html#gdk-pixbuf-new-from-file
+  Actually, on looking into it, gtk uses libpng to read png files.  Jesus I am surprised nobody
+  has re-written libpng from scratch just to fix the horrible API it has (setjmp/longjmp as an
+  error handling API? Really?  On looking into it: https://libspng.org/ which is motivated to
+  provide a better API, but it uses fucking cmake, though it's available as a single .h and .c
+  file pair too. Also, lodepng is another alternate library.)
+
+* Replace texture reloading system based on file timestamp polling
+  in graph_dev_opengl.c (e.g.  graph_dev_reload_changed_textures() and
+  graph_dev_reload_changed_cubemap_textures) with an inotify(7) based system.
+  Actually, only mesh_viewer uses this texture reloading system, so it's not
+  really a priority.
+
+* (DONE) Allow snis_client to do the disk i/o part of reloading textures in another
+  thread.  Right now, when we're traversing a warp gate, it's loading a bunch
+  of per-solarsystem textures from the main thread, calling load_textures() from
+  main_da_expose(), which it has to do that from the main thread.  But the disk
+  i/o part could be done in another thread.  This would allow some transition
+  thing, like some kind of warp gate effect to be animated.  Right now, it doesn't
+  update the display at all once it calls load_textures() until load_textures()
+  returns -- which can take several seconds.  (THIS IS COMPLETE).  Now there is a
+  work queue system, and texture load requests go through the work queue system,
+  which does file loading and PNG decoding via a worker thread pool which completes
+  requests asynchronously, and entities which rely on textures not yet finished
+  loading are not rendered until the asset load request is marked complete by a
+  worker thread.
+
+* This is an interesting article about using doubles rather than floats for translations
+  to avoid jitteriness when far from the origin without having a floating origin (means,
+  it might even work for multi-player.)
+  https://godotengine.org/article/emulating-double-precision-gpu-render-large-worlds
+  Has some limitations though, so not sure it will really work or gain that much for
+  our purposes.
+  This appears to be the commit that article is talking about:
+  https://github.com/godotengine/godot/commit/27a3014f5052ae40f89684a5559c17fbebe7aa8d
+  And here is a paper: https://andrewthall.org/papers/df64_qf128.pdf
+
+* share/snis and snisdb should probably honor the XDG directory specification for runtime
+  data.  For snisdb this should be pretty straightforward as we already have SNIS_DB_DIR
+  to allow moving it.  But share/snis is a little trickier.  Currently some of that stuff
+  is in github, and some on spacenerdsinspace.com.  The idea I have for now is to modify
+  snis_update_assets to be able to copy data from a local source as well as from remote,
+  and allow it to generate a manifest for local stuff on the fly by traversing the directory
+  and knowing to skip .git dirs, etc.  Then, either via snis_launcher, or maybe via
+  snis_client and snis_server (with some interlock to prevent them stomping on each other)
+  the assets could be updated to copy them under (by default) ~/.local/share/space-nerds-in-space
+  in accordance with XDG dir spec for runtime usage.  snis_update_assets could check for
+  updates periodically (probably the first run, plus on startup if more than a week has
+  elapsed, or on user demand.)  Something like that.
