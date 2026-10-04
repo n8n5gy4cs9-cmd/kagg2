@@ -1,6 +1,10 @@
 # HANDOFF
 
-## State (v0.36.0)
+## State (v0.37.0)
+- **Boarding maps (T36):** `src/board/maps.rs` — 3 authored ASCII maps (Outer Base 2–3, Cargo Deck 3–4, Citadel 5), two layers (layout + things), mirrored by seed; `level::generate` uses them for size ≥ 2 and falls back to `generate_random`. Bots still win missions 4/5/8/9/10 (3 seeds each); solo bot survey: size 3 ≈ 3–5/6, size 5 hard (as before; capital ships are meant for partners). Not Quake maps (no map data exists; commercial) — original layouts. Replacement list in `ASSETS.md`. Next: height (stairs/lifts), more maps, an editor-format loader.
+- Fuse test now compares sums over seeds (authored maps make path length seed-dependent).
+
+## Console (v0.36.0)
 - **Dev console (T35):** `` ` `` or F12 opens it anywhere (game pauses). `src/cheats.rs` parses (`Cheat`), `SpaceScene::cheat` / `BoardScene::cheat` apply, `main.rs` handles `level N` / `board [N]` jumps (fresh scene of that mission; `board` uses the mission's real forced objective with a dummy target id, so winning it does not advance the mission stage). Commands: `help god heal ammo credits kill win lose level board menu quit`. Not played by a human yet (headless tests only: parser, `boarding_stage`, `kill_all`).
 
 - **T01–T34 done = everything in `PLAN.md` (M0–M5).** `./run.sh` launches (see its header). New binaries: `playtest` (bot reports), `server` + `netclient` (LAN), plus `texgen`.

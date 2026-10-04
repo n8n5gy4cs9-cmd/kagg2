@@ -107,6 +107,32 @@ dock clamp, UI click/confirm/deny, engine hum (loop), ambient drone (loop), musi
 boarding: footsteps, door, blaster, shotgun, rattler, rocket, rail, axe, pain, die, pickup,
 alarm, reactor hum.
 
+## Level layouts (v0.37) — `src/board/maps.rs`
+Ships of size 2+ are boarded in **hand-authored, Quake-2-style base maps** (hub rooms, pillared halls,
+loops, key-locked shortcuts, alcoves) mirrored by seed; size 1 still uses the random room chain
+(`level::generate_random`). They are **original layouts, not copies of Quake 2 maps** (the reference
+repo ships no map data and the Quake 2 maps are commercial content). Maps: *Outer Base* (size 2–3,
+44×26), *Cargo Deck* (3–4, 60×34), *Citadel* (5, 66×38). Format: two ASCII layers (layout + things),
+legend in the file header; tests check rectangular layers, solvability for every objective and mirror,
+and that every locked door has its key.
+Flat grid only — no height, stairs or lifts yet.
+
+## What to replace later (everything below is a generated stand-in)
+Priority 1 = most visible to a player, 3 = least. Keep the **names** (and sizes) and the game picks
+the new files up; textures live in `assets/textures/*.png` (regenerate with `texgen` or overwrite).
+
+| Area | Now | Replace with | Prio |
+|---|---|---|---|
+| Boarding enemies (`minion_*`, `prefect_voss`, `drone_body`) | box-person meshes (`src/meshgen/board.rs`) + 64²/128² palette textures; Quake-2-style roster and behaviour (soldier→Grunt, infantry→Guard, gunner, medic, berserk→Enforcer, tank→Mech, supertank→Voss) | real skinned/animated models + skins | 1 |
+| Boarding walls/floors/doors (`wall_*`, `floor_*`, `ceiling_*`, `door_*`) | 256² dithered tiles | hand-painted 256²–512² tiling sets per theme (corvette, station, prison, bridge) | 1 |
+| Weapon viewmodels (`weapon_*`) | flat 256² sprites/boxes | modelled first-person weapons + muzzle/impact effects | 1 |
+| Level maps (`src/board/maps.rs`) | 3 ASCII maps | more/bigger maps, ideally made in a level editor with height (stairs, lifts, windows, secrets); a loader for an editor format would replace `Template` | 1 |
+| Ship meshes (`longship`, `minion_*`, `dreadnought`, …) | code-built prisms | modelled ships with hull textures (`hull_*`) | 2 |
+| Space textures (planets, sun, sky, nebula) | procedural noise | painted/NASA-style maps (licence permitting) | 2 |
+| Pickups (`pickup_*`) and props (`crate_*`, `barrel`, `console_*`) | 64²/128² billboards and boxes | 3D props | 2 |
+| Sounds (`src/audio/synth.rs`) | synthesised at start-up | recorded/mastered SFX, voices, music | 2 |
+| HUD, font, logo (`hud_frame`, `font_atlas`, `title_logo`) | generated | designed UI skin and font | 3 |
+
 ## Validation
 `texgen` prints a table (name, size, mean colour) and writes `assets/contact_sheet.png`;
 tests verify count, dimensions, tileability (edge wrap diff below threshold) and determinism.

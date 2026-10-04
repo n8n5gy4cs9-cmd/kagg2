@@ -388,6 +388,19 @@ fn carve_corridor(
 
 /// Generate a level. `size` is `1..=5` (enemy ship class). Deterministic in `seed`.
 pub fn generate(seed: u64, theme: Theme, objective: Objective, size: u32) -> Level {
+    // ships of size 2+ use the hand-authored Quake-style maps
+    let maps = super::maps::eligible(size.clamp(1, 5));
+    if !maps.is_empty() {
+        let t = maps[(seed % maps.len() as u64) as usize];
+        if let Some(l) = t.build(seed, theme, objective, size.clamp(1, 5)) {
+            return l;
+        }
+    }
+    generate_random(seed, theme, objective, size)
+}
+
+/// The random room-chain generator (size 1 ships, and the fallback for the authored maps).
+pub fn generate_random(seed: u64, theme: Theme, objective: Objective, size: u32) -> Level {
     for attempt in 0..64u64 {
         if let Some(l) = try_generate(
             seed.wrapping_add(attempt * 7919),

@@ -1034,8 +1034,11 @@ mod tests {
 
     #[test]
     fn the_fuse_is_longer_on_a_deeper_level() {
-        let fuse = |size| {
-            let mut w = world(Objective::Sabotage, Theme::Corvette, size);
+        let fuse = |size, seed| {
+            let mut w = BoardWorld::new(
+                generate(seed, Theme::Corvette, Objective::Sabotage, size),
+                seed,
+            );
             w.player.pos = w.level.centre(w.level.goal.0, w.level.goal.1);
             w.step(
                 1.0 / 60.0,
@@ -1046,7 +1049,8 @@ mod tests {
             );
             w.progress.charges.unwrap_or(0.0)
         };
-        assert!(fuse(5) > fuse(1));
+        let total = |size| (1..=8u64).map(|seed| fuse(size, seed)).sum::<f32>();
+        assert!(total(5) > total(1), "{} vs {}", total(5), total(1));
     }
 
     #[test]
