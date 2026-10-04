@@ -95,6 +95,8 @@ Debrief(win) -> Briefing{m+1}        Debrief(loss) -> Briefing{m} (retry)</code>
 <tr><td>New boarding objective</td><td><code>board/level.rs</code> (<code>Objective</code>, <code>for_theme</code>, generator), <code>board/world.rs</code> (progress logic)</td></tr>
 <tr><td>New texture or model</td><td>generate it in <code>texgen</code> / <code>meshgen</code>; never copy art from <code>REFERENCE_tobe_DELETED/</code></td></tr>
 </tbody></table>
+<h2 id="console">Console and cheats</h2>
+<p>Parser and line editor: <code>src/cheats.rs</code> (<code>Cheat</code>, <code>parse</code>, <code>Console</code>, headless, unit-tested). Overlay and key handling: <code>src/gfx/console.rs</code>. Effects: <code>SpaceScene::cheat</code>, <code>BoardScene::cheat</code> (god mode tops up every frame, so the sim stays untouched), <code>BoardWorld::kill_all</code>, <code>MissionState::force_win</code>, and the <code>level</code>/<code>board</code> jumps in <code>main.rs</code> (<code>mission::boarding_stage</code> finds the boarding objective and ship). To add a command: add a <code>Cheat</code> variant and a <code>parse</code> arm, handle it in both scenes (or in <code>main.rs</code>), add it to <code>HELP</code>, and update the tables in the guide and manual.</p>
 <h2>Tests</h2>
 <p>Headless unit tests live next to the code. Useful helpers: <code>mission::tests::started/run</code>, <code>combat::tests::spawn_ship</code>, <code>sector::new_game(seed, sector)</code>. Scene tests in <code>space_scene.rs</code> build a <code>SpaceScene</code> without a window (no drawing). Determinism tests compare <code>state_hash</code> of two runs.</p>
 <h2>Docs and versioning</h2>

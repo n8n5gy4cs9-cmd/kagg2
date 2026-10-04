@@ -2,6 +2,7 @@
 
 pub mod board_scene;
 pub mod cockpit;
+pub mod console;
 pub mod dock_ui;
 pub mod help;
 pub mod hud;

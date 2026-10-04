@@ -1,6 +1,8 @@
 # HANDOFF
 
-## State (v0.35.0)
+## State (v0.36.0)
+- **Dev console (T35):** `` ` `` or F12 opens it anywhere (game pauses). `src/cheats.rs` parses (`Cheat`), `SpaceScene::cheat` / `BoardScene::cheat` apply, `main.rs` handles `level N` / `board [N]` jumps (fresh scene of that mission; `board` uses the mission's real forced objective with a dummy target id, so winning it does not advance the mission stage). Commands: `help god heal ammo credits kill win lose level board menu quit`. Not played by a human yet (headless tests only: parser, `boarding_stage`, `kill_all`).
+
 - **T01–T34 done = everything in `PLAN.md` (M0–M5).** `./run.sh` launches (see its header). New binaries: `playtest` (bot reports), `server` + `netclient` (LAN), plus `texgen`.
 - **Space sim** (headless, `src/sim/`): `ops.rs`, `combat.rs`, `ai.rs` (fleeing ships now jump to warp when 9 km clear), `crew.rs`, `systems.rs`, `science.rs`, `nav.rs`, `comms.rs`, `econ.rs`, `sector.rs`, `mission.rs`,
   plus **`bot.rs`** (bridge bot), **`boarding.rs`** (space-side boarding aftermath, shared by the scene and the harness), **`script.rs`** (`.k2m` mission scripts).

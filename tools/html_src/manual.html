@@ -11,6 +11,8 @@
 ./run.sh test               fmt check, clippy, tests
 ./run.sh shot OUT.png [..]  save a screenshot and exit</code></pre>
 <p>These developer shortcuts start free flight without a mission. Extra flags for the binary: <code>--chase</code>, <code>--target</code>, <code>--fire</code>, <code>--throttle F</code>, <code>--pos x,y,z --look x,y,z</code>, <code>--frames N</code>. Environment: <code>KAGG2_HOME</code> (where settings and saves go), <code>KAGGA_FPS=1</code> (FPS counter), <code>KAGGA_DEV=1</code> (F9 completes the current mission).</p>
+<h3 id="console">Developer console</h3>
+<p>Press <code>`</code> (or <code>F12</code>) in any screen to open the console; the game pauses while it is open. Commands: <code>help</code>, <code>god [on|off]</code>, <code>heal</code>, <code>ammo</code> (torpedoes/missiles in space; all weapons, ammo and keys when boarding), <code>credits N</code>, <code>kill</code>, <code>win</code>, <code>lose</code>, <code>level N</code> (jump into the space part of mission 1-10), <code>board [N]</code> (jump straight into the boarding level of mission N: 4 Courier, 5 Prison Barge, 8 Frost Command, 9 Bulwark, 10 Aegis Prime; without N the current mission), <code>menu</code>, <code>quit</code>. Up/Down recall earlier lines.</p>
 <p>More flags: <code>--script FILE.k2m</code> plays a <a href="#mission-scripts">mission script</a>; <code>--coop N</code> (0 to 2) with <code>--board</code> adds AI shield-brothers. Other programs in the package: <code>server</code> and <code>netclient</code> (<a href="#multiplayer">LAN play</a>), <code>playtest</code> (<a href="#playtest">bot reports</a>), <code>texgen</code>.</p>
 <h2>Menus and screens</h2>
 <table><thead><tr><th>Screen</th><th>Keys</th></tr></thead><tbody>

@@ -16,6 +16,7 @@ use crate::board::monster::{State, stats};
 use crate::board::pmove::Input;
 use crate::board::weapons::Weapon;
 use crate::board::{BEvent, BoardWorld, Outcome, generate};
+use crate::cheats::Cheat;
 use crate::sim::EntityId;
 
 const FOV: f32 = 78.0;
@@ -88,6 +89,8 @@ pub struct BoardScene {
     /// AI shield-brothers fighting beside the player (`0..=2`, T33); `P` on the objective screen.
     pub partners: usize,
     bots: Vec<BoardBot>,
+    /// Cheat: the boarding party cannot be hurt.
+    pub god: bool,
 }
 
 /// One-element objective list for a campaign-forced objective.
@@ -125,12 +128,55 @@ impl BoardScene {
             invert_y: false,
             partners: 0,
             bots: Vec::new(),
+            god: false,
         }
     }
 
     /// Whether the mouse should be captured for looking around.
     pub fn wants_grab(&self) -> bool {
         self.phase == Phase::Play
+    }
+
+    /// Apply a console cheat to the running boarding action; returns the reply line.
+    pub fn cheat(&mut self, c: Cheat) -> String {
+        if let Cheat::God(v) = c {
+            self.god = v.unwrap_or(!self.god);
+            return format!("GOD MODE {}", if self.god { "ON" } else { "OFF" });
+        }
+        if self.phase != Phase::Play {
+            return "start the boarding first (pick an objective)".into();
+        }
+        let Some(w) = self.world.as_mut() else {
+            return "no boarding in progress".into();
+        };
+        match c {
+            Cheat::Heal => {
+                w.player.health = w.player.max_health;
+                w.player.armor = 200;
+                "HEALTH AND ARMOUR FULL".into()
+            }
+            Cheat::Ammo => {
+                w.player.weapons = [true; 6];
+                for a in crate::board::weapons::Ammo::ALL {
+                    w.player.add_ammo(a, a.max());
+                }
+                w.player.keys = [true; 3];
+                "ALL WEAPONS, AMMO AND KEYS".into()
+            }
+            Cheat::Kill => format!("{} MONSTERS KILLED", w.kill_all()),
+            Cheat::Win => {
+                w.force_objective();
+                self.finish(Outcome::Won);
+                "BOARDING WON".into()
+            }
+            Cheat::Lose => {
+                w.player.health = 0.0;
+                self.finish(Outcome::Died);
+                "BOARDING LOST".into()
+            }
+            Cheat::Credits(_) => "credits only work in space".into(),
+            _ => "not a boarding command".into(),
+        }
     }
 
     pub fn result(&self) -> Option<&BoardResult> {
@@ -263,6 +309,9 @@ impl BoardScene {
             return;
         }
         let Some(w) = self.world.as_mut() else { return };
+        if self.god {
+            w.player.health = w.player.max_health;
+        }
         // mouse look (pixel deltas; the cursor is grabbed while playing)
         let (mx, my) = mouse_position();
         let m = vec2(mx, my);

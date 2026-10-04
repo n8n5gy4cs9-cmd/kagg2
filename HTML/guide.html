@@ -54,7 +54,7 @@ footer .brand{font-size:17px}footer>span,footer small{font-size:10px;letter-spac
 :focus-visible{outline:2px solid var(--mint);outline-offset:5px}
 @media(max-width:860px){header{height:auto;padding:12px 6%;flex-wrap:wrap}nav{order:3;width:100%}.nav-cta{display:none}.section{padding:50px 6%}.wrap{grid-template-columns:1fr}aside{display:none}main h1{font-size:2.6rem}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
-</style></head><body><header><a class="brand" href="index.html"><span class="rune">ᛟ</span> KAGG2</a><nav aria-label="Main navigation"><a href="index.html">Home</a><a href="guide.html" class=on>Player guide</a><a href="manual.html">Manual</a><a href="developer-guide.html">Developer guide</a><a href="ai-guide.html">AI helper guide</a></nav><a class="nav-cta" href="guide.html">Start playing <span>ᚠ</span></a></header><div class="wrap"><aside><div class="grp">On this page</div><a class="l2" href="#getting-started">Getting started</a><a class="l2" href="#your-first-flight">Your first flight</a><a class="l2" href="#the-campaign">The campaign</a><a class="l2" href="#fighting-in-space">Fighting in space</a><a class="l2" href="#boarding">Boarding</a><a class="l2" href="#starbases-and-trade">Starbases and trade</a><a class="l2" href="#endings">Endings</a><a class="l2" href="#difficulty">Difficulty</a><a class="l2" href="#your-own-missions">Your own missions</a><a class="l2" href="#tips">Tips</a></aside><main><h1>Player guide</h1>
+</style></head><body><header><a class="brand" href="index.html"><span class="rune">ᛟ</span> KAGG2</a><nav aria-label="Main navigation"><a href="index.html">Home</a><a href="guide.html" class=on>Player guide</a><a href="manual.html">Manual</a><a href="developer-guide.html">Developer guide</a><a href="ai-guide.html">AI helper guide</a></nav><a class="nav-cta" href="guide.html">Start playing <span>ᚠ</span></a></header><div class="wrap"><aside><div class="grp">On this page</div><a class="l2" href="#getting-started">Getting started</a><a class="l2" href="#your-first-flight">Your first flight</a><a class="l2" href="#the-campaign">The campaign</a><a class="l2" href="#fighting-in-space">Fighting in space</a><a class="l2" href="#boarding">Boarding</a><a class="l2" href="#starbases-and-trade">Starbases and trade</a><a class="l2" href="#endings">Endings</a><a class="l2" href="#difficulty">Difficulty</a><a class="l2" href="#your-own-missions">Your own missions</a><a class="l2" href="#console-and-cheats">Console and cheats</a><a class="l2" href="#tips">Tips</a></aside><main><h1>Player guide</h1>
 <h2 id="getting-started">Getting started<a class="a" href="#getting-started">#</a></h2>
 <p>Kagg2 is a ship-bridge simulator with a first-person boarding game inside it. You fly a Marsgard longship, run its stations (or let your crew do it), cripple Concord warships and storm them. Ten missions take you from Mars to Earth.</p>
 <ol>
@@ -116,10 +116,26 @@ footer .brand{font-size:17px}footer>span,footer small{font-size:10px;letter-spac
 <p>Settings → Difficulty: <strong>Thrall</strong> (easy, enemies 0.7×), <strong>Karl</strong> (normal), <strong>Jarl</strong> (hard, 1.4×). It scales enemy aim and aggression in space and the damage monsters deal when boarding. You can change it between missions.</p>
 <h2 id="your-own-missions">Your own missions<a class="a" href="#your-own-missions">#</a></h2>
 <p>Missions can be written as small text files and played with <code>--script FILE</code> or by dropping them in <code>~/.kagg2/missions/</code>; the format is in the <a href="manual.html#mission-scripts">manual</a>. A LAN server lets several people share the bridge (<a href="manual.html#multiplayer">multiplayer</a>), but only as a text client for now.</p>
+<h2 id="console-and-cheats">Console and cheats<a class="a" href="#console-and-cheats">#</a></h2>
+<p>Press <code>`</code> (or <code>F12</code>) on any screen to open the console; the game pauses while it is open. Up/Down recall earlier lines.</p>
+<table>
+<tr><th>Command</th><th>What it does</th></tr>
+<tr><td><code>help</code></td><td>list the commands</td></tr>
+<tr><td><code>god [on|off]</code></td><td>invulnerable ship (space) and boarding party; stays on across jumps</td></tr>
+<tr><td><code>heal</code></td><td>full hull, shields, crew / full health and armour</td></tr>
+<tr><td><code>ammo</code> (<code>keys</code>)</td><td>torpedoes and missiles full / all six weapons, full ammo, all three keys</td></tr>
+<tr><td><code>credits N</code></td><td>add N credits (space only)</td></tr>
+<tr><td><code>kill</code></td><td>destroy every hostile ship / kill every monster</td></tr>
+<tr><td><code>win</code>, <code>lose</code></td><td>end the mission (space) or the boarding as won / lost</td></tr>
+<tr><td><code>level N</code></td><td>jump into the space part of mission N (1-10) with your saved ship</td></tr>
+<tr><td><code>board [N]</code></td><td>jump straight into the boarding level of mission N: 4 Courier, 5 Prison Barge, 8 Frost Command, 9 Bulwark, 10 Aegis Prime (no N = current mission)</td></tr>
+<tr><td><code>menu</code>, <code>quit</code></td><td>back to the main menu / exit</td></tr>
+</table>
+<p>Jumping with <code>level</code> or <code>board</code> does not change your saved campaign. A <code>board</code> jump has no real ship behind it, so winning it returns you to the space part of that mission without advancing the mission stage.</p>
 <h2 id="tips">Tips<a class="a" href="#tips">#</a></h2>
 <ul><li>Cripple, do not kill: boarded ships give credits, ammunition and objective progress.</li><li>Dock between waves to rearm; docking also pauses the danger.</li><li>Let the crew run Damage Control and Science (AUTO) while you fly and shoot.</li><li>On big ships take both shield-brothers; the bots could not clear a size-5 dreadnought alone.</li><li>Mouse feel in boarding is a setting: lower the sensitivity if you overshoot.</li><li>If a key clashes with something, Settings marks both rows red.</li></ul>
 </main></div><script>
 const links=[...document.querySelectorAll('aside a')];const heads=links.map(a=>document.getElementById(a.getAttribute('href').slice(1)));
 const onScroll=()=>{let cur=0,best=-1e9;heads.forEach((h,i)=>{if(!h)return;const t=h.getBoundingClientRect().top;if(t<130&&t>best){best=t;cur=i}});links.forEach((a,i)=>a.classList.toggle('cur',i===cur))};
 addEventListener('scroll',onScroll,{passive:true});onScroll();
-</script><footer><a class="brand" href="index.html"><span class="rune">ᛟ</span> KAGG2</a><span>MARS VIKINGS AGAINST THE EARTH MINIONS</span><small>v0.35.0 · generated by tools/make_html.py: edit tools/html_src/*.html, not this file</small></footer></body></html>
+</script><footer><a class="brand" href="index.html"><span class="rune">ᛟ</span> KAGG2</a><span>MARS VIKINGS AGAINST THE EARTH MINIONS</span><small>v0.36.0 · generated by tools/make_html.py: edit tools/html_src/*.html, not this file</small></footer></body></html>

@@ -2,7 +2,9 @@ use macroquad::prelude::*;
 
 use kagg2::app::{AppEvent, AppState, Menu, MenuAction, menu_event};
 use kagg2::assets::Assets;
+use kagg2::cheats::{Cheat, Console};
 use kagg2::gfx::board_scene::BoardScene;
+use kagg2::gfx::console;
 use kagg2::gfx::keys::Bind;
 use kagg2::gfx::render3d::Renderer;
 use kagg2::gfx::settings_ui::SettingsUi;
@@ -199,6 +201,21 @@ fn parse_cli() -> Cli {
     cli
 }
 
+/// Fresh space scene for a cheat jump into mission `n`, carrying the campaign's ship.
+fn new_mission_scene(
+    n: u8,
+    campaign: &SaveGame,
+    settings: &Settings,
+    start_scene: &impl Fn(SectorId, &Cli, &Settings) -> SpaceScene,
+    cli: &Cli,
+    god: bool,
+) -> SpaceScene {
+    let mut sc = start_scene(SectorId::for_mission(n), cli, settings);
+    sc.start_mission(n, &campaign.carry, settings.difficulty.scale());
+    sc.god = god;
+    sc
+}
+
 fn save_shot(path: &str) {
     let mut img = get_screen_data();
     for px in img.bytes.chunks_exact_mut(4) {
@@ -241,6 +258,8 @@ async fn main() {
     let mut music_wanted = settings.music;
     let mut vol_toast = 0.0f32;
     let mut forced: Option<AppEvent> = None;
+    let mut console = Console::default();
+    let mut god = false;
     let mut board: Option<BoardScene> = None;
     let mut grabbed = false;
     let mut state = AppState::Boot;
@@ -346,7 +365,17 @@ async fn main() {
             v.draw(&assets, &mut renderer);
         } else {
             stars.update(dt);
-            if state == AppState::Settings && settings_ui.update(&mut settings) {
+            if console::toggle_pressed() {
+                console.toggle();
+                if console.open && console.log.is_empty() {
+                    console.print("KAGG2 CONSOLE - TYPE HELP");
+                }
+            }
+            let mut cheat_cmd = None;
+            if console.open && console::input(&mut console) {
+                cheat_cmd = console.submit();
+            }
+            if !console.open && state == AppState::Settings && settings_ui.update(&mut settings) {
                 if let Err(e) = save::store_settings(&settings) {
                     eprintln!("cannot save settings: {e}");
                 }
@@ -355,15 +384,109 @@ async fn main() {
                 music_wanted = settings.music;
                 forced = Some(AppEvent::ToMenu);
             }
-            let mut input_event = state_input(
-                state,
-                &mut menu,
-                boot_started,
-                &campaign,
-                has_save,
-                &mut help_page,
-            );
-            if matches!(state, AppState::Space { .. })
+            let mut input_event = if console.open {
+                None
+            } else {
+                state_input(
+                    state,
+                    &mut menu,
+                    boot_started,
+                    &campaign,
+                    has_save,
+                    &mut help_page,
+                )
+            };
+            if let Some(cmd) = cheat_cmd {
+                let reply = match cmd {
+                    Cheat::Menu => {
+                        forced = Some(AppEvent::ToMenu);
+                        "BACK TO MENU".to_owned()
+                    }
+                    Cheat::Quit => {
+                        forced = Some(AppEvent::QuitRequested);
+                        "BYE".to_owned()
+                    }
+                    Cheat::God(v) => {
+                        god = v.unwrap_or(!god);
+                        if let Some(sc) = scene.as_mut() {
+                            sc.god = god;
+                        }
+                        if let Some(b) = board.as_mut() {
+                            b.god = god;
+                        }
+                        format!("GOD MODE {}", if god { "ON" } else { "OFF" })
+                    }
+                    Cheat::Mission(n) => {
+                        let sc =
+                            new_mission_scene(n, &campaign, &settings, &start_scene, &cli, god);
+                        scene = Some(sc);
+                        board = None;
+                        loss_reason = "";
+                        state = AppState::Space { mission: n };
+                        format!(
+                            "MISSION {n}: {}",
+                            kagg2::story::briefing(n).map_or("", |b| b.title)
+                        )
+                    }
+                    Cheat::Board(arg) => {
+                        let mission = arg.or(match state {
+                            AppState::Space { mission }
+                            | AppState::Boarding { mission }
+                            | AppState::Briefing { mission } => Some(mission),
+                            _ => None,
+                        });
+                        match mission.and_then(|n| {
+                            kagg2::sim::mission::boarding_stage(n).map(|(obj, ship)| (n, obj, ship))
+                        }) {
+                            Some((n, obj, ship)) => {
+                                let sc = new_mission_scene(
+                                    n,
+                                    &campaign,
+                                    &settings,
+                                    &start_scene,
+                                    &cli,
+                                    god,
+                                );
+                                let seed = 0xB0A2_D000 + u64::from(n);
+                                let (theme, size) = kagg2::board::theme_for(ship, "", seed);
+                                let mut b = BoardScene::new(kagg2::gfx::board_scene::BoardInfo {
+                                    theme,
+                                    size,
+                                    label: ship.to_owned(),
+                                    // no real ship: this id never matches a live entity
+                                    target: kagg2::sim::EntityId {
+                                        index: u32::MAX,
+                                        generation: 0,
+                                    },
+                                    seed,
+                                    force: Some(obj),
+                                });
+                                b.difficulty = settings.difficulty.scale();
+                                b.sens = settings.mouse_sens;
+                                b.invert_y = settings.invert_y;
+                                b.god = god;
+                                scene = Some(sc);
+                                board = Some(b);
+                                loss_reason = "";
+                                state = AppState::Boarding { mission: n };
+                                format!("BOARDING {} (MISSION {n})", ship.to_uppercase())
+                            }
+                            None => {
+                                "no boarding there - missions 4, 5, 8, 9, 10: board N".to_owned()
+                            }
+                        }
+                    }
+                    c => match state {
+                        AppState::Space { .. } => scene.as_mut().map(|s| s.cheat(c)),
+                        AppState::Boarding { .. } => board.as_mut().map(|b| b.cheat(c)),
+                        _ => None,
+                    }
+                    .unwrap_or_else(|| "start a mission first (level N)".to_owned()),
+                };
+                console.print(reply);
+            }
+            if !console.open
+                && matches!(state, AppState::Space { .. })
                 && let Some(sc) = scene.as_ref()
                 && is_key_pressed(sc.keys.get(Bind::Board))
                 && let Some(info) = sc.boardable()
@@ -453,7 +576,8 @@ async fn main() {
                 mixer.stop_music();
             }
             let in_board = matches!(state, AppState::Boarding { .. });
-            let want_grab = in_board && board.as_ref().is_some_and(|b| b.wants_grab());
+            let want_grab =
+                in_board && !console.open && board.as_ref().is_some_and(|b| b.wants_grab());
             if want_grab != grabbed {
                 set_cursor_grab(want_grab);
                 show_mouse(!want_grab);
@@ -461,7 +585,9 @@ async fn main() {
             }
             if in_board {
                 if let Some(b) = board.as_mut() {
-                    b.update(dt, &assets, Some(&mixer));
+                    if !console.open {
+                        b.update(dt, &assets, Some(&mixer));
+                    }
                     b.draw(&assets, &mut renderer);
                     if let Some(res) = b.result().cloned() {
                         if let Some(sc) = scene.as_mut() {
@@ -478,7 +604,9 @@ async fn main() {
                 }
             } else if in_space {
                 if let Some(sc) = scene.as_mut() {
-                    sc.update(dt, Some(&mixer));
+                    if !console.open {
+                        sc.update(dt, Some(&mixer));
+                    }
                     sc.draw(&assets, &mut renderer);
                     if let Some(won) = sc.outcome() {
                         forced = Some(AppEvent::MissionEnded { won });
@@ -501,6 +629,9 @@ async fn main() {
                 AppState::Ending { chosen } => screens::draw_ending(chosen),
                 AppState::Quit => {}
             }
+        }
+        if console.open {
+            console::draw(&assets, &console);
         }
         vol_toast = (vol_toast - dt).max(0.0);
         if vol_toast > 0.0 {

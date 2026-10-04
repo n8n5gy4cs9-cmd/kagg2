@@ -5,6 +5,7 @@ pub mod assets;
 pub mod audio;
 pub mod balance;
 pub mod board;
+pub mod cheats;
 pub mod gfx;
 pub mod meshgen;
 pub mod net;

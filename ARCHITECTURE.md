@@ -28,6 +28,7 @@ Kagg2/
 │   │   ├── script.rs          # `.k2m` mission scripts -> Mission data + registry (ids 11+)                              [T34]
 │   ├── board/                 # HEADLESS boarding actions: level.rs (generator) pmove.rs weapons.rs monster.rs world.rs  [T18-T24]
 │   │   └── bot.rs             # boarding bot (lock-aware pathing, fights, loot, party play); world.rs also runs co-op parties [T30/T33]
+│   ├── cheats.rs              # dev console: command parser + Console edit line/log (headless); gfx/console.rs draws it, main.rs applies  [T35]
 │   ├── balance.rs             # every tunable the playtest adjusts (difficulty scale, boarding kit/density/damage/fuse) [T30]
 │   ├── playtest.rs            # headless harness: bots play missions, survey tables, bench                               [T30/T31]
 │   ├── net/                   # HEADLESS multiplayer: wire.rs proto.rs server.rs client.rs (std TcpStream)                [T32]

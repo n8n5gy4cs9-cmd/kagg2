@@ -152,6 +152,25 @@ impl BoardWorld {
         }
     }
 
+    /// Developer cheat: kill every living monster (counts the kills; a dead Voss completes the boss
+    /// objective). Returns how many died.
+    pub fn kill_all(&mut self) -> usize {
+        let mut ev = Vec::new();
+        let alive: Vec<usize> = (0..self.monsters.len())
+            .filter(|&i| self.monsters[i].alive())
+            .collect();
+        for &i in &alive {
+            self.hurt_monster(i, 1.0e6, &mut ev);
+        }
+        alive.len()
+    }
+
+    /// Developer cheat: mark the objective as done (the player still has to reach the airlock).
+    pub fn force_objective(&mut self) {
+        let mut ev = Vec::new();
+        self.complete(&mut ev);
+    }
+
     fn complete(&mut self, ev: &mut Vec<BEvent>) {
         if !self.progress.done {
             self.progress.done = true;
@@ -771,6 +790,17 @@ mod tests {
 
     fn idle() -> Input {
         Input::default()
+    }
+
+    #[test]
+    fn cheat_kill_all_counts_kills_and_force_objective_completes() {
+        let mut w = world(Objective::CaptureBridge, Theme::Corvette, 2);
+        let n = w.monsters.iter().filter(|m| m.alive()).count();
+        assert_eq!(w.kill_all(), n);
+        assert_eq!(w.progress.kills as usize, n);
+        assert!(w.monsters.iter().all(|m| !m.alive()));
+        w.force_objective();
+        assert!(w.progress.done);
     }
 
     #[test]

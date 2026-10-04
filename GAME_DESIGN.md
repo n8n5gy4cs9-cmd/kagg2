@@ -136,7 +136,7 @@ shots heard, reinforcements spawn at the airlock. Keycards Bronze → Silver →
 
 | Context | Keys |
 |---|---|
-| Global | F1–F7 stations, Tab pause, Esc menu, F5/F9 quicksave/load (T28) |
+| Global | F1–F7 stations, Tab pause, Esc menu, F5/F9 quicksave/load (T28), `` ` `` / F12 developer console (v0.36: god, heal, ammo, credits, kill, win, lose, `level N`, `board [N]`, menu, quit) |
 | Helm | W/S throttle, A/D yaw, Q/E roll, ↑/↓ pitch (↓ = nose up), ←/→ strafe, R/F up/down, Space brake, X zero, LShift full, M assist, C camera, T/G target/clear, H help, B board, J warp |
 | Weapons | Enter/LMB (Helm tab) lance, Z torpedo, V missile (needs T lock), [ ] lance frequency, , . shield frequency |
 | Stations | F1–F7 tabs, Tab = toggle crew AUTO for the open station, N scan, U sweep, P autopilot, O go to target, L dock/undock, K mine, 1–3 power presets (Engineering), H hail (Comms) |
@@ -199,3 +199,6 @@ A seat = (station, controller) where controller is `CrewAi` or `Human(player_id)
 - **Multiplayer (T32)** — see `ARCHITECTURE.md`: seats per station, crew AI keeps the empty ones, server-authoritative 60 Hz sim, 20 Hz snapshots, std TCP. Text client only.
 - **Co-op boarding (T33)** — parties of up to 4 (host + 3 mates); the objective screen's **P** adds 0–2 AI shield-brothers who walk the same plan as the playtest bot.
 - **Mission scripts (T34)** — `.k2m` text files; format in the manual (`HTML/manual.html#mission-scripts`) and `src/sim/script.rs`.
+
+## 11. Console and cheats (v0.36)
+`` ` `` or F12 opens a pausing console on any screen (Up/Down = history). Commands: `help`, `god [on|off]`, `heal`, `ammo`/`keys`, `credits N`, `kill`, `win`, `lose`, `level N` (space part of mission 1–10), `board [N]` (boarding level of mission N: 4, 5, 8, 9, 10; none = current mission), `menu`, `quit`. God mode refills hull/shields (space) or health (boarding) every frame. Jumps build a fresh scene with the saved campaign ship and do not touch the save; a `board` jump uses a dummy target, so winning it returns to space without advancing the mission stage.

@@ -60,5 +60,21 @@
 <p>Settings → Difficulty: <strong>Thrall</strong> (easy, enemies 0.7×), <strong>Karl</strong> (normal), <strong>Jarl</strong> (hard, 1.4×). It scales enemy aim and aggression in space and the damage monsters deal when boarding. You can change it between missions.</p>
 <h2>Your own missions</h2>
 <p>Missions can be written as small text files and played with <code>--script FILE</code> or by dropping them in <code>~/.kagg2/missions/</code>; the format is in the <a href="manual.html#mission-scripts">manual</a>. A LAN server lets several people share the bridge (<a href="manual.html#multiplayer">multiplayer</a>), but only as a text client for now.</p>
+<h2 id="console">Console and cheats</h2>
+<p>Press <code>`</code> (or <code>F12</code>) on any screen to open the console; the game pauses while it is open. Up/Down recall earlier lines.</p>
+<table>
+<tr><th>Command</th><th>What it does</th></tr>
+<tr><td><code>help</code></td><td>list the commands</td></tr>
+<tr><td><code>god [on|off]</code></td><td>invulnerable ship (space) and boarding party; stays on across jumps</td></tr>
+<tr><td><code>heal</code></td><td>full hull, shields, crew / full health and armour</td></tr>
+<tr><td><code>ammo</code> (<code>keys</code>)</td><td>torpedoes and missiles full / all six weapons, full ammo, all three keys</td></tr>
+<tr><td><code>credits N</code></td><td>add N credits (space only)</td></tr>
+<tr><td><code>kill</code></td><td>destroy every hostile ship / kill every monster</td></tr>
+<tr><td><code>win</code>, <code>lose</code></td><td>end the mission (space) or the boarding as won / lost</td></tr>
+<tr><td><code>level N</code></td><td>jump into the space part of mission N (1-10) with your saved ship</td></tr>
+<tr><td><code>board [N]</code></td><td>jump straight into the boarding level of mission N: 4 Courier, 5 Prison Barge, 8 Frost Command, 9 Bulwark, 10 Aegis Prime (no N = current mission)</td></tr>
+<tr><td><code>menu</code>, <code>quit</code></td><td>back to the main menu / exit</td></tr>
+</table>
+<p>Jumping with <code>level</code> or <code>board</code> does not change your saved campaign. A <code>board</code> jump has no real ship behind it, so winning it returns you to the space part of that mission without advancing the mission stage.</p>
 <h2>Tips</h2>
 <ul><li>Cripple, do not kill: boarded ships give credits, ammunition and objective progress.</li><li>Dock between waves to rearm; docking also pauses the danger.</li><li>Let the crew run Damage Control and Science (AUTO) while you fly and shoot.</li><li>On big ships take both shield-brothers; the bots could not clear a size-5 dreadnought alone.</li><li>Mouse feel in boarding is a setting: lower the sensitivity if you overshoot.</li><li>If a key clashes with something, Settings marks both rows red.</li></ul>

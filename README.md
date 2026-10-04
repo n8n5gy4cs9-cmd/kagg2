@@ -5,7 +5,7 @@ bridge-sim space war (inspired by *Space Nerds In Space*), then storm disabled e
 bases in first-person boarding actions (inspired by *Quake 2*). Written in Rust. Single player
 first; a headless LAN multiplayer server, co-op boarding with AI partners and mission scripting are included.
 
-> Status: T01–T34 done (M0–M5: foundation, space, boarding, 10-mission campaign, balance + bot playtest, release tooling, LAN server, co-op boarding, mission scripts) — see [tasks.md](tasks.md).
+> Status: T01–T35 done (M0–M5: foundation, space, boarding, 10-mission campaign, balance + bot playtest, release tooling, LAN server, co-op boarding, mission scripts) — see [tasks.md](tasks.md).
 
 ## Run
 ```sh
@@ -27,6 +27,9 @@ Flight controls: **W/S** throttle, **A/D** yaw, **↑/↓** pitch, **Q/E** roll,
 assist, **H** help, **Esc** menu.
 Combat/stations: **Enter**/click lances, **Z** torpedo, **V** missile (lock with **T**), **[ ]** lance frequency,
 **, .** shield frequency, **F1–F7** station tabs, **Tab** crew AUTO, **N** scan, **P** autopilot, **L** dock, **K** mine, **-/=** volume.
+
+## Console and cheats
+Press `` ` `` or F12 in the game: `help`, `god`, `heal`, `ammo`, `credits N`, `kill`, `win`, `lose`, `level N` (jump to mission N), `board [N]` (jump to the boarding level of mission 4/5/8/9/10), `menu`, `quit`. Details: `HTML/guide.html#console`.
 
 ## Docs
 | File | What |

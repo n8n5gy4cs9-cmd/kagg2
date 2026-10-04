@@ -887,6 +887,14 @@ pub fn def(id: u8) -> Option<&'static Mission> {
     MISSIONS.get(usize::from(id).checked_sub(1)?)
 }
 
+/// The boarding stage of campaign mission `id`: the objective and the ship label prefix.
+pub fn boarding_stage(id: u8) -> Option<(Objective, &'static str)> {
+    def(id)?.stages.iter().find_map(|s| match s.goal {
+        Goal::Board { obj, ship } => Some((obj, ship)),
+        _ => None,
+    })
+}
+
 /// A line of dialogue (or a system line when `who` is empty) for the HUD.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Note {
@@ -1073,6 +1081,13 @@ impl MissionState {
     pub fn on_boarding(&mut self, label: &str, objective: Objective, won: bool) {
         if won && self.board_wanted(label) == Some(objective) {
             self.boarded = true;
+        }
+    }
+
+    /// Developer cheat: decide the mission as won.
+    pub fn force_win(&mut self) {
+        if self.result.is_none() {
+            self.result = Some(true);
         }
     }
 
@@ -1266,6 +1281,13 @@ mod tests {
             let ev = w.step(&[]);
             m.update(w, &ev);
         }
+    }
+
+    #[test]
+    fn boarding_stage_lists_the_boarding_missions() {
+        let with: Vec<u8> = (1..=10).filter(|m| boarding_stage(*m).is_some()).collect();
+        assert_eq!(with, [4, 5, 8, 9, 10]);
+        assert_eq!(boarding_stage(4), Some((Objective::StealData, "Courier")));
     }
 
     #[test]

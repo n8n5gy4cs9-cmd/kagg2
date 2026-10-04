@@ -19,12 +19,14 @@ use super::stations::{self, Frame, Tab, UiState};
 use super::ui::{Action, Ctx};
 use crate::assets::Assets;
 use crate::audio::Sfx;
+use crate::cheats::Cheat;
 use crate::sim::boarding;
+use crate::sim::combat;
 use crate::sim::comms::{self, Reply};
 use crate::sim::event::{Event, Ordnance};
 use crate::sim::flight::{FORWARD, RIGHT, UP};
 use crate::sim::mission::{Carry, MissionState, Note};
-use crate::sim::ops::{Dest, Faction};
+use crate::sim::ops::{Dest, Faction, class_stats};
 use crate::sim::sector::{SectorId, SkyKind};
 use crate::sim::{Addressed, Command, EntityId, Kind, Stepper, World, new_game, transfer};
 
@@ -109,6 +111,8 @@ pub struct SpaceScene {
     pub keys: Bindings,
     pub invert_y: bool,
     help_station: bool,
+    /// Cheat: the ship cannot be hurt.
+    pub god: bool,
 }
 
 fn star_field() -> Vec<Star> {
@@ -177,6 +181,7 @@ impl SpaceScene {
             keys: Bindings::default(),
             invert_y: false,
             help_station: false,
+            god: false,
         }
     }
 
@@ -495,6 +500,13 @@ impl SpaceScene {
         }
         self.fx.retain(|f| f.age < f.life);
         let Some(me) = self.player_id() else { return };
+        if self.god
+            && let Some(o) = self.world.get_mut(me).and_then(|e| e.ops.as_deref_mut())
+            && !o.dead
+        {
+            o.hull = o.max_hull;
+            o.shields = [o.max_shield; 4];
+        }
         let dead = self.ops().is_none_or(|o| o.dead);
         if dead {
             self.dead_for += dt;
@@ -1302,6 +1314,77 @@ impl SpaceScene {
                 indices: i.to_vec(),
                 texture: None,
             });
+        }
+    }
+
+    /// Apply a console cheat to the running space scene; returns the reply line.
+    pub fn cheat(&mut self, c: Cheat) -> String {
+        let Some(me) = self.player_id() else {
+            return "no player ship".into();
+        };
+        match c {
+            Cheat::God(v) => {
+                self.god = v.unwrap_or(!self.god);
+                format!("GOD MODE {}", if self.god { "ON" } else { "OFF" })
+            }
+            Cheat::Heal => {
+                if let Some(o) = self.world.get_mut(me).and_then(|e| e.ops.as_deref_mut()) {
+                    o.hull = o.max_hull;
+                    o.shields = [o.max_shield; 4];
+                    o.sys.crew = o.sys.crew.max(class_stats(o.class_name).crew);
+                }
+                "SHIP REPAIRED".into()
+            }
+            Cheat::Ammo => {
+                if let Some(o) = self.world.get_mut(me).and_then(|e| e.ops.as_deref_mut()) {
+                    o.torpedoes = o.max_torpedoes();
+                    o.missiles = o.max_missiles();
+                }
+                "TORPEDOES AND MISSILES FULL".into()
+            }
+            Cheat::Credits(n) => {
+                let mut total = 0;
+                if let Some(o) = self.world.get_mut(me).and_then(|e| e.ops.as_deref_mut()) {
+                    o.cargo.credits = o.cargo.credits.saturating_add(n);
+                    total = o.cargo.credits;
+                }
+                format!("CREDITS: {total}")
+            }
+            Cheat::Kill => {
+                let hostile: Vec<(EntityId, Vec3)> = self
+                    .world
+                    .iter()
+                    .filter(|(_, e)| {
+                        e.kind == Kind::Ship
+                            && e.faction == Faction::Minion
+                            && e.ops.as_deref().is_some_and(|o| !o.dead)
+                    })
+                    .map(|(i, e)| (i, e.pos))
+                    .collect();
+                for (id, pos) in &hostile {
+                    combat::apply_damage(
+                        &mut self.world,
+                        *id,
+                        *pos + Vec3::X * 100.0,
+                        1.0e6,
+                        None,
+                        Some(me),
+                    );
+                }
+                format!("{} HOSTILE SHIPS DESTROYED", hostile.len())
+            }
+            Cheat::Win | Cheat::Lose => match self.mission.as_mut() {
+                Some(m) if c == Cheat::Win => {
+                    m.force_win();
+                    "MISSION WON".into()
+                }
+                Some(m) => {
+                    m.fail("CHEAT: LOST");
+                    "MISSION LOST".into()
+                }
+                None => "no mission running".into(),
+            },
+            _ => "not a ship command".into(),
         }
     }
 
