@@ -53,6 +53,7 @@ impl SectorId {
             3 | 4 | 7 => SectorId::Belt,
             6 => SectorId::Jupiter,
             8 | 9 => SectorId::Luna,
+            11.. => crate::sim::script::get(mission).map_or(SectorId::EarthOrbit, |s| s.sector),
             _ => SectorId::EarthOrbit,
         }
     }

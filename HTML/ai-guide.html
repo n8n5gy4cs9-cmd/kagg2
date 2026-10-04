@@ -54,7 +54,7 @@ footer .brand{font-size:17px}footer>span,footer small{font-size:10px;letter-spac
 :focus-visible{outline:2px solid var(--mint);outline-offset:5px}
 @media(max-width:860px){header{height:auto;padding:12px 6%;flex-wrap:wrap}nav{order:3;width:100%}.nav-cta{display:none}.section{padding:50px 6%}.wrap{grid-template-columns:1fr}aside{display:none}main h1{font-size:2.6rem}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
-</style></head><body><header><a class="brand" href="index.html"><span class="rune">ᛟ</span> KAGG2</a><nav aria-label="Main navigation"><a href="index.html">Home</a><a href="guide.html">Player guide</a><a href="manual.html">Manual</a><a href="developer-guide.html">Developer guide</a><a href="ai-guide.html" class=on>AI helper guide</a></nav><a class="nav-cta" href="guide.html">Start playing <span>ᚠ</span></a></header><div class="wrap"><aside><div class="grp">On this page</div><a class="l2" href="#orientation-in-one-minute">Orientation in one minute</a><a class="l2" href="#hard-rules">Hard rules</a><a class="l2" href="#definition-of-done-run-before-finishing">Definition of done (run before finishing)</a><a class="l2" href="#file-map-for-agents">File map for agents</a><a class="l2" href="#recipes">Recipes</a><a class="l3" href="#tune-a-mission">Tune a mission</a><a class="l3" href="#add-a-goal-or-a-role">Add a goal or a role</a><a class="l3" href="#add-a-setting">Add a setting</a><a class="l3" href="#add-a-keybinding">Add a keybinding</a><a class="l3" href="#find-where-an-event-is-handled">Find where an event is handled</a><a class="l2" href="#pitfalls-seen-in-this-repo">Pitfalls seen in this repo</a><a class="l2" href="#verification-checklist-for-reviewers">Verification checklist for reviewers</a><a class="l2" href="#prompt-snippet-for-a-new-agent-session">Prompt snippet for a new agent session</a></aside><main><h1>AI helper guide</h1>
+</style></head><body><header><a class="brand" href="index.html"><span class="rune">ᛟ</span> KAGG2</a><nav aria-label="Main navigation"><a href="index.html">Home</a><a href="guide.html">Player guide</a><a href="manual.html">Manual</a><a href="developer-guide.html">Developer guide</a><a href="ai-guide.html" class=on>AI helper guide</a></nav><a class="nav-cta" href="guide.html">Start playing <span>ᚠ</span></a></header><div class="wrap"><aside><div class="grp">On this page</div><a class="l2" href="#orientation-in-one-minute">Orientation in one minute</a><a class="l2" href="#hard-rules">Hard rules</a><a class="l2" href="#definition-of-done-run-before-finishing">Definition of done (run before finishing)</a><a class="l2" href="#file-map-for-agents">File map for agents</a><a class="l2" href="#recipes">Recipes</a><a class="l3" href="#tune-a-mission">Tune a mission</a><a class="l3" href="#add-a-goal-or-a-role">Add a goal or a role</a><a class="l3" href="#add-a-setting">Add a setting</a><a class="l3" href="#add-a-keybinding">Add a keybinding</a><a class="l3" href="#change-a-balance-number">Change a balance number</a><a class="l3" href="#add-a-command">Add a Command</a><a class="l3" href="#add-a-script-goal">Add a script goal</a><a class="l3" href="#find-where-an-event-is-handled">Find where an event is handled</a><a class="l2" href="#pitfalls-seen-in-this-repo">Pitfalls seen in this repo</a><a class="l2" href="#verification-checklist-for-reviewers">Verification checklist for reviewers</a><a class="l2" href="#prompt-snippet-for-a-new-agent-session">Prompt snippet for a new agent session</a></aside><main><h1>AI helper guide</h1>
 <p>Everything an AI coding agent needs to work in this repository without breaking it. Read this, then <code>AGENTS.md</code>, <code>tasks.md</code> and <code>HANDOFF.md</code>.</p>
 <h2 id="orientation-in-one-minute">Orientation in one minute<a class="a" href="#orientation-in-one-minute">#</a></h2>
 <ul>
@@ -79,7 +79,9 @@ footer .brand{font-size:17px}footer>span,footer small{font-size:10px;letter-spac
 cargo clippy --all-targets -- -D warnings
 cargo test --release
 cargo fmt
-python3 tools/make_html.py      # only if docs changed</code></pre>
+python3 tools/make_html.py      # only if docs changed
+python3 tools/licence_check.py  # if dependencies, assets or licence files changed
+cargo run --release --bin playtest 3   # if missions, balance.rs, the bots or boarding changed</code></pre>
 <p>Quote real command output as evidence. Max three repair attempts per failing check, then stop and report the blocker. After the task: move the line in <code>tasks.md</code> to Done, update <code>HANDOFF.md</code> and the design docs touched, bump the version (minor per task, patch per fix) and offer a one-line commit message <code>vX.Y.Z: ...</code>.</p>
 <h2 id="file-map-for-agents">File map for agents<a class="a" href="#file-map-for-agents">#</a></h2>
 <table><thead><tr><th>To change...</th><th>Open</th></tr></thead><tbody>
@@ -93,6 +95,12 @@ python3 tools/make_html.py      # only if docs changed</code></pre>
 <tr><td>Ship stats and upgrades</td><td><code>src/sim/ops.rs</code>, <code>src/sim/econ.rs</code></td></tr>
 <tr><td>Sectors and stock encounters</td><td><code>src/sim/sector.rs</code></td></tr>
 <tr><td>Boarding levels, monsters, weapons</td><td><code>src/board/*.rs</code>; scene <code>src/gfx/board_scene.rs</code></td></tr>
+<tr><td>Balance numbers</td><td><code>src/balance.rs</code>; reports from <code>src/playtest.rs</code> (<code>cargo run --release --bin playtest</code>)</td></tr>
+<tr><td>Bots</td><td><code>src/sim/bot.rs</code> (bridge), <code>src/board/bot.rs</code> (boarding)</td></tr>
+<tr><td>Multiplayer</td><td><code>src/net/</code>; binaries <code>src/bin/server.rs</code>, <code>src/bin/netclient.rs</code></td></tr>
+<tr><td>Co-op boarding</td><td><code>BoardWorld::step_team</code> in <code>src/board/world.rs</code>; AI partners in <code>board_scene.rs</code></td></tr>
+<tr><td>Mission scripts</td><td><code>src/sim/script.rs</code>; example <code>missions/wolf-pack.k2m</code></td></tr>
+<tr><td>Releases, licences</td><td><code>tools/release.sh</code>, <code>.github/workflows/release.yml</code>, <code>tools/licence_check.py</code></td></tr>
 <tr><td>Launcher and flags</td><td><code>run.sh</code>, <code>parse_cli</code> in <code>src/main.rs</code></td></tr>
 </tbody></table>
 <h2 id="recipes">Recipes<a class="a" href="#recipes">#</a></h2>
@@ -104,10 +112,18 @@ python3 tools/make_html.py      # only if docs changed</code></pre>
 <p><code>Settings</code> field, <code>to_text</code>, <code>from_text</code>, a row in <code>settings_ui.rs</code> (adjust <code>FIXED_ROWS</code> and the match arms), apply it in <code>main.rs</code>, extend the round-trip test in <code>save.rs</code>.</p>
 <h3 id="add-a-keybinding">Add a keybinding<a class="a" href="#add-a-keybinding">#</a></h3>
 <p>See the developer guide: <code>Bind</code> variant, <code>ALL</code> length, name, default, replace the literal key in <code>space_scene.rs</code>.</p>
+<h3 id="change-a-balance-number">Change a balance number<a class="a" href="#change-a-balance-number">#</a></h3>
+<p>Edit it in <code>src/balance.rs</code> (or the mission data), run <code>cargo run --release --bin playtest 4</code> and <code>... playtest 12 boarding</code> before and after, and report both tables. Do not assert exact win rates in tests; assert shapes. A change that makes a mission unwinnable for the bot shows up as <code>STUCK</code> or a failure reason in the table.</p>
+<h3 id="add-a-command">Add a Command<a class="a" href="#add-a-command">#</a></h3>
+<p>Variant in <code>sim/command.rs</code>, handler, UI; then <code>net/wire.rs</code> (<code>put_command</code>/<code>get_command</code>, and the round-trip test list) and <code>net::station_of</code>. The compiler flags the missing match arms.</p>
+<h3 id="add-a-script-goal">Add a script goal<a class="a" href="#add-a-script-goal">#</a></h3>
+<p>See the developer guide section "Mission scripts"; update the format table in the manual too.</p>
 <h3 id="find-where-an-event-is-handled">Find where an event is handled<a class="a" href="#find-where-an-event-is-handled">#</a></h3>
 <p>Events are defined in <code>sim/event.rs</code>; the scene reacts in <code>SpaceScene::on_event</code>; missions only see <code>Destroyed</code> directly (plus world state polling).</p>
 <h2 id="pitfalls-seen-in-this-repo">Pitfalls seen in this repo<a class="a" href="#pitfalls-seen-in-this-repo">#</a></h2>
 <ul>
+<li>The bots measure what they can: they cannot judge fun. Do not claim a feel or sound verification from a bot run.</li>
+<li>Long runs (<code>playtest 12 boarding</code> takes a few minutes): start them in the background and read the output file.</li>
 <li>macOS <code>sed -i</code> needs an argument; use <code>perl -pi -e</code> or Python for scripted edits. In zsh, unquoted globs such as <code>--include=*.rs</code> fail: quote them.</li>
 <li>Edition 2024 reserves <code>gen</code>; let-chains are in use (clippy asks for them); prefer <code>is_multiple_of</code> over <code>% n == 0</code>.</li>
 <li><code>macroquad</code> pixel-font text should use integer scales; the HUD derives them from <code>ui_scale</code>.</li>
@@ -132,4 +148,4 @@ update tasks.md/HANDOFF.md/docs, bump the version and offer a commit message.</c
 const links=[...document.querySelectorAll('aside a')];const heads=links.map(a=>document.getElementById(a.getAttribute('href').slice(1)));
 const onScroll=()=>{let cur=0,best=-1e9;heads.forEach((h,i)=>{if(!h)return;const t=h.getBoundingClientRect().top;if(t<130&&t>best){best=t;cur=i}});links.forEach((a,i)=>a.classList.toggle('cur',i===cur))};
 addEventListener('scroll',onScroll,{passive:true});onScroll();
-</script><footer><a class="brand" href="index.html"><span class="rune">ᛟ</span> KAGG2</a><span>MARS VIKINGS AGAINST THE EARTH MINIONS</span><small>v0.30.0 · generated by tools/make_html.py: edit tools/html_src/*.html, not this file</small></footer></body></html>
+</script><footer><a class="brand" href="index.html"><span class="rune">ᛟ</span> KAGG2</a><span>MARS VIKINGS AGAINST THE EARTH MINIONS</span><small>v0.35.0 · generated by tools/make_html.py: edit tools/html_src/*.html, not this file</small></footer></body></html>

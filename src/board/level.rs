@@ -631,7 +631,10 @@ fn try_generate(seed: u64, theme: Theme, objective: Objective, size: u32) -> Opt
             }
             r.center()
         };
-        let mut count = 1 + rng.below(2) + size / 2;
+        let mut count = 1 + rng.below(2);
+        if rng.f32() < size.saturating_sub(1) as f32 * crate::balance::BOARD_DENSITY_STEP {
+            count += 1;
+        }
         if r.kind == RoomKind::Barracks {
             count += 2;
         }
@@ -679,7 +682,7 @@ fn try_generate(seed: u64, theme: Theme, objective: Objective, size: u32) -> Opt
             ],
             _ => &[ItemKind::HealthSmall, ItemKind::Bullets],
         };
-        for _ in 0..(1 + rng.below(2)) {
+        for _ in 0..(1 + rng.below(2) + crate::balance::BOARD_EXTRA_ITEMS) {
             let it = items[rng.below(items.len() as u32) as usize];
             let (x, y) = pick_tile(&mut rng, &mut occupied);
             lvl.spawns.push(Spawn {
@@ -811,5 +814,29 @@ mod tests {
                 .count(),
             3
         );
+    }
+}
+
+#[cfg(test)]
+mod density_tests {
+    use super::*;
+
+    #[test]
+    fn bigger_ships_hold_more_monsters() {
+        let avg = |size: u32| -> f32 {
+            let total: usize = (1..=10u64)
+                .map(|seed| {
+                    generate(seed, Theme::Corvette, Objective::StealData, size)
+                        .spawns
+                        .iter()
+                        .filter(|s| matches!(s.kind, SpawnKind::Monster(_)))
+                        .count()
+                })
+                .sum();
+            total as f32 / 10.0
+        };
+        let counts: Vec<f32> = (1..=5).map(avg).collect();
+        println!("average monsters by size: {counts:?}");
+        assert!(counts.windows(2).all(|w| w[1] > w[0]), "{counts:?}");
     }
 }

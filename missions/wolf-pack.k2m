@@ -1,0 +1,15 @@
+# Example mod mission for Kagg2 (format: see HTML/manual.html, "Mission scripts").
+# Play it:  cargo run --release -- --script missions/wolf-pack.k2m
+mission "Wolf Pack"
+sector belt
+
+stage "FLY TO BELT OUTPOST" reach "Belt Outpost" 900
+  say 1 "Sigrun" "Quiet out here. Too quiet."
+  limit 400
+
+stage "DESTROY THE WOLVES" clear
+  say 2 "Bjorn" "Contacts! Interceptors, coming fast."
+  spawn 3 player 0 0 -3500 attack interceptor,interceptor,cutter label "Wolf"
+
+stage "ALL CLEAR - HOLD HERE" wait 6
+  say 0 "Sigrun" "Good hunting. The Outpost is safe."

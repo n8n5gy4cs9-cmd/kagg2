@@ -150,15 +150,15 @@ Acceptance = what must be true to tick the task. Every task also needs: `cargo c
   (modelled on SNIS `help_text_*`); boarding controls card.
 
 ### M4 — Polish
-- **T30 Balance + bot.** Headless bot that flies/ shoots/ boards on all missions at 3 difficulties;
+- **T30 Balance + bot.** _(done v0.31.0: `sim/bot.rs`, `board/bot.rs`, `playtest.rs`, `balance.rs`)_ Headless bot that flies/ shoots/ boards on all missions at 3 difficulties;
   report win rates, TTK, resource flow; tune numbers in one `balance.rs`.
-- **T31 Release.** Profile perf (target 60 fps on a 2020 laptop), release builds, final docs,
+- **T31 Release.** _(done v0.32.0: release profile, `tools/release.sh`, CI workflow, licence audit; `REFERENCE_tobe_DELETED/` kept until the maintainer says so)_ Profile perf (target 60 fps on a 2020 laptop), release builds, final docs,
   licence/credits audit, remove `REFERENCE_tobe_DELETED/` (only when user says so).
 
 ### M5 — Optional / future (design kept compatible, not scheduled)
-- **T32 Multiplayer.** Server-authoritative sim (`step` already takes `Command`s per player),
+- **T32 Multiplayer.** _(done v0.33.0, headless: `src/net/`, `bin/server`, `bin/netclient`)_ Server-authoritative sim (`step` already takes `Command`s per player),
   snapshots, one human per station (crew-AI yields the seat), LAN lobby. Std sockets first.
-- **T33 Co-op boarding**, **T34 Mission scripting format**.
+- **T33 Co-op boarding** _(done v0.34.0)_, **T34 Mission scripting format** _(done v0.35.0: `sim/script.rs`)_.
 
 ## 5. Risks
 

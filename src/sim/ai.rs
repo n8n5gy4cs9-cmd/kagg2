@@ -6,6 +6,7 @@
 use glam::Vec3;
 
 use super::command::{Addressed, Command};
+use super::event::Event;
 use super::flight::{CUTTER, DESTROYER, DREADNOUGHT, FORWARD, FRIGATE, INTERCEPTOR};
 use super::ops::{Faction, Ops};
 use super::world::{Entity, EntityId, Kind, World};
@@ -42,6 +43,8 @@ pub struct Ai {
 }
 
 const DETECT: f32 = 7000.0;
+/// A fleeing ship farther than this from every enemy escapes.
+const ESCAPE_RANGE: f32 = 9000.0;
 
 impl Ai {
     pub fn new(home: Vec3, skill: f32) -> Ai {
@@ -152,6 +155,7 @@ pub fn think(w: &mut World) -> Vec<Addressed> {
         .map(|(i, _)| i)
         .collect();
     let mut out = Vec::new();
+    let mut escaped: Vec<(EntityId, &'static str)> = Vec::new();
     let player = w.player;
     for id in ids {
         let Some(me) = w.get(id) else { continue };
@@ -277,6 +281,10 @@ pub fn think(w: &mut World) -> Vec<Addressed> {
                 }
             }
             (Mode::Flee, _) => {
+                // a beaten ship that gets clear jumps to warp (so a chase cannot go on forever)
+                if pool.iter().all(|p| p.1.distance(me.pos) > ESCAPE_RANGE) {
+                    escaped.push((id, me.label));
+                }
                 let away = nearest.map_or(Vec3::Z, |t| me.pos - t.1);
                 push(steer(me, away));
                 push(Command::SetThrottle(1.0));
@@ -289,6 +297,13 @@ pub fn think(w: &mut World) -> Vec<Addressed> {
         if call_help {
             reinforce(w, id);
         }
+    }
+    for (id, label) in escaped {
+        w.push_event(Event::Message(format!(
+            "{} JUMPED TO WARP",
+            label.to_uppercase()
+        )));
+        w.despawn(id);
     }
     out
 }

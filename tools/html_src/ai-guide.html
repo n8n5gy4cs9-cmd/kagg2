@@ -23,7 +23,9 @@
 cargo clippy --all-targets -- -D warnings
 cargo test --release
 cargo fmt
-python3 tools/make_html.py      # only if docs changed</code></pre>
+python3 tools/make_html.py      # only if docs changed
+python3 tools/licence_check.py  # if dependencies, assets or licence files changed
+cargo run --release --bin playtest 3   # if missions, balance.rs, the bots or boarding changed</code></pre>
 <p>Quote real command output as evidence. Max three repair attempts per failing check, then stop and report the blocker. After the task: move the line in <code>tasks.md</code> to Done, update <code>HANDOFF.md</code> and the design docs touched, bump the version (minor per task, patch per fix) and offer a one-line commit message <code>vX.Y.Z: ...</code>.</p>
 <h2>File map for agents</h2>
 <table><thead><tr><th>To change...</th><th>Open</th></tr></thead><tbody>
@@ -37,6 +39,12 @@ python3 tools/make_html.py      # only if docs changed</code></pre>
 <tr><td>Ship stats and upgrades</td><td><code>src/sim/ops.rs</code>, <code>src/sim/econ.rs</code></td></tr>
 <tr><td>Sectors and stock encounters</td><td><code>src/sim/sector.rs</code></td></tr>
 <tr><td>Boarding levels, monsters, weapons</td><td><code>src/board/*.rs</code>; scene <code>src/gfx/board_scene.rs</code></td></tr>
+<tr><td>Balance numbers</td><td><code>src/balance.rs</code>; reports from <code>src/playtest.rs</code> (<code>cargo run --release --bin playtest</code>)</td></tr>
+<tr><td>Bots</td><td><code>src/sim/bot.rs</code> (bridge), <code>src/board/bot.rs</code> (boarding)</td></tr>
+<tr><td>Multiplayer</td><td><code>src/net/</code>; binaries <code>src/bin/server.rs</code>, <code>src/bin/netclient.rs</code></td></tr>
+<tr><td>Co-op boarding</td><td><code>BoardWorld::step_team</code> in <code>src/board/world.rs</code>; AI partners in <code>board_scene.rs</code></td></tr>
+<tr><td>Mission scripts</td><td><code>src/sim/script.rs</code>; example <code>missions/wolf-pack.k2m</code></td></tr>
+<tr><td>Releases, licences</td><td><code>tools/release.sh</code>, <code>.github/workflows/release.yml</code>, <code>tools/licence_check.py</code></td></tr>
 <tr><td>Launcher and flags</td><td><code>run.sh</code>, <code>parse_cli</code> in <code>src/main.rs</code></td></tr>
 </tbody></table>
 <h2>Recipes</h2>
@@ -48,10 +56,18 @@ python3 tools/make_html.py      # only if docs changed</code></pre>
 <p><code>Settings</code> field, <code>to_text</code>, <code>from_text</code>, a row in <code>settings_ui.rs</code> (adjust <code>FIXED_ROWS</code> and the match arms), apply it in <code>main.rs</code>, extend the round-trip test in <code>save.rs</code>.</p>
 <h3>Add a keybinding</h3>
 <p>See the developer guide: <code>Bind</code> variant, <code>ALL</code> length, name, default, replace the literal key in <code>space_scene.rs</code>.</p>
+<h3>Change a balance number</h3>
+<p>Edit it in <code>src/balance.rs</code> (or the mission data), run <code>cargo run --release --bin playtest 4</code> and <code>... playtest 12 boarding</code> before and after, and report both tables. Do not assert exact win rates in tests; assert shapes. A change that makes a mission unwinnable for the bot shows up as <code>STUCK</code> or a failure reason in the table.</p>
+<h3>Add a Command</h3>
+<p>Variant in <code>sim/command.rs</code>, handler, UI; then <code>net/wire.rs</code> (<code>put_command</code>/<code>get_command</code>, and the round-trip test list) and <code>net::station_of</code>. The compiler flags the missing match arms.</p>
+<h3>Add a script goal</h3>
+<p>See the developer guide section "Mission scripts"; update the format table in the manual too.</p>
 <h3>Find where an event is handled</h3>
 <p>Events are defined in <code>sim/event.rs</code>; the scene reacts in <code>SpaceScene::on_event</code>; missions only see <code>Destroyed</code> directly (plus world state polling).</p>
 <h2>Pitfalls seen in this repo</h2>
 <ul>
+<li>The bots measure what they can: they cannot judge fun. Do not claim a feel or sound verification from a bot run.</li>
+<li>Long runs (<code>playtest 12 boarding</code> takes a few minutes): start them in the background and read the output file.</li>
 <li>macOS <code>sed -i</code> needs an argument; use <code>perl -pi -e</code> or Python for scripted edits. In zsh, unquoted globs such as <code>--include=*.rs</code> fail: quote them.</li>
 <li>Edition 2024 reserves <code>gen</code>; let-chains are in use (clippy asks for them); prefer <code>is_multiple_of</code> over <code>% n == 0</code>.</li>
 <li><code>macroquad</code> pixel-font text should use integer scales; the HUD derives them from <code>ui_scale</code>.</li>

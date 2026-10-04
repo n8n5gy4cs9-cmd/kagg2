@@ -44,13 +44,13 @@
 <h2>Boarding</h2>
 <p>A hostile ship can be boarded when it is <em>disabled</em> or <em>crippled</em> (hull below 60 % and shields almost gone) and you are within about 450 units. Target it and press <kbd>B</kbd>. In campaign missions that demand it, the objective is chosen for you; otherwise you choose.</p>
 <table><thead><tr><th>Objective</th><th>Do</th></tr></thead><tbody>
-<tr><td>Sabotage the reactor</td><td>Reach the reactor, set the charges, escape to the airlock within 45 seconds.</td></tr>
+<tr><td>Sabotage the reactor</td><td>Reach the reactor, set the charges, escape to the airlock before the fuse runs out (at least 45 seconds, longer on big ships).</td></tr>
 <tr><td>Capture the bridge</td><td>Clear the bridge and use the console.</td></tr>
 <tr><td>Rescue prisoners</td><td>Open the cells and free all three prisoners.</td></tr>
 <tr><td>Steal the data core</td><td>Take the core from its room.</td></tr>
 <tr><td>Kill Prefect Voss</td><td>Boss fight on the dreadnought bridge.</td></tr>
 </tbody></table>
-<p>Move with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>, look with the mouse, fire with click or <kbd>Enter</kbd>, change weapons with <kbd>1</kbd>–<kbd>6</kbd>, use things with <kbd>E</kbd>. Keys (bronze, silver, gold) open matching locked doors and always lie somewhere you can reach. When the objective is done, walk back to the airlock and press <kbd>E</kbd>. Dying ends the mission; <kbd>Esc</kbd> aborts and returns you to your ship.</p>
+<p>On the objective screen <kbd>P</kbd> brings up to two AI shield-brothers: they fight beside you, share keycards and draw fire, and the party leaves together at the airlock. Move with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>, look with the mouse, fire with click or <kbd>Enter</kbd>, change weapons with <kbd>1</kbd>–<kbd>6</kbd>, use things with <kbd>E</kbd>. Keys (bronze, silver, gold) open matching locked doors and always lie somewhere you can reach. When the objective is done, walk back to the airlock and press <kbd>E</kbd>. Dying ends the mission; <kbd>Esc</kbd> aborts and returns you to your ship.</p>
 <blockquote class="warn"><strong>Careful:</strong> destroy a ship you need to board (the Courier, the Prison Barge, Frost Command, the Bulwark, Aegis Prime) and the mission fails. Aim for the shields first and ease off once its hull is under 60 %.</blockquote>
 <h2>Starbases and trade</h2>
 <p>Dock at a friendly station to repair, rearm and refuel (the Forge is half price), buy upgrades and trade 12 commodities. Upgrades (to level 3): Rune Lances +30 % damage, Shield Generator +30 %, Reactor Core +20 % power, Hull Plating +25 %, Ordnance Bays +2 torpedoes and missiles per level. The mining bot (<kbd>K</kbd> on a targeted asteroid) fills your hold with ore.</p>
@@ -58,5 +58,7 @@
 <p>After Prefect Voss falls you choose: <strong>1 Break the Armada</strong> (destroy the codes; an uneasy peace between equals) or <strong>2 Take the Throne</strong> (use the codes; Mars rules). The choice is an epilogue and is saved.</p>
 <h2>Difficulty</h2>
 <p>Settings → Difficulty: <strong>Thrall</strong> (easy, enemies 0.7×), <strong>Karl</strong> (normal), <strong>Jarl</strong> (hard, 1.4×). It scales enemy aim and aggression in space and the damage monsters deal when boarding. You can change it between missions.</p>
+<h2>Your own missions</h2>
+<p>Missions can be written as small text files and played with <code>--script FILE</code> or by dropping them in <code>~/.kagg2/missions/</code>; the format is in the <a href="manual.html#mission-scripts">manual</a>. A LAN server lets several people share the bridge (<a href="manual.html#multiplayer">multiplayer</a>), but only as a text client for now.</p>
 <h2>Tips</h2>
-<ul><li>Cripple, do not kill: boarded ships give credits, ammunition and objective progress.</li><li>Dock between waves to rearm; docking also pauses the danger.</li><li>Let the crew run Damage Control and Science (AUTO) while you fly and shoot.</li><li>Mouse feel in boarding is a setting: lower the sensitivity if you overshoot.</li><li>If a key clashes with something, Settings marks both rows red.</li></ul>
+<ul><li>Cripple, do not kill: boarded ships give credits, ammunition and objective progress.</li><li>Dock between waves to rearm; docking also pauses the danger.</li><li>Let the crew run Damage Control and Science (AUTO) while you fly and shoot.</li><li>On big ships take both shield-brothers; the bots could not clear a size-5 dreadnought alone.</li><li>Mouse feel in boarding is a setting: lower the sensitivity if you overshoot.</li><li>If a key clashes with something, Settings marks both rows red.</li></ul>

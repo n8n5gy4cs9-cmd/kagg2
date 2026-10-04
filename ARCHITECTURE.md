@@ -24,7 +24,13 @@ Kagg2/
 │   │   ├── mission.rs         # campaign engine: Mission/Stage/Goal/Beat data, MissionState, Carry                   [T25-T27]
 │   │   ├── science.rs nav.rs  # scan/sweep/report; autopilot, warp, docking, mining, command router      [T13/T14/T16]
 │   │   ├── comms.rs econ.rs   # hail dialogs + taunts; prices, trade, services, shipyard                 [T15/T16]
+│   │   ├── bot.rs boarding.rs # headless bridge bot (flies/fights/docks/mines/scans/boards); space-side boarding aftermath      [T30]
+│   │   ├── script.rs          # `.k2m` mission scripts -> Mission data + registry (ids 11+)                              [T34]
 │   ├── board/                 # HEADLESS boarding actions: level.rs (generator) pmove.rs weapons.rs monster.rs world.rs  [T18-T24]
+│   │   └── bot.rs             # boarding bot (lock-aware pathing, fights, loot, party play); world.rs also runs co-op parties [T30/T33]
+│   ├── balance.rs             # every tunable the playtest adjusts (difficulty scale, boarding kit/density/damage/fuse) [T30]
+│   ├── playtest.rs            # headless harness: bots play missions, survey tables, bench                               [T30/T31]
+│   ├── net/                   # HEADLESS multiplayer: wire.rs proto.rs server.rs client.rs (std TcpStream)                [T32]
 │   ├── story.rs save.rs       # story text/verses/endings; settings + save files (text, versioned)        [T25-T28]
 │   ├── audio/                 # HEADLESS synth: SFX + music -> PCM/WAV                                   [T17]
 │   ├── gfx/                   # macroquad-only
@@ -35,7 +41,7 @@ Kagg2/
 │   │   ├── dock_ui.rs sound.rs # docked screen (mutates Ops via econ), playback Mixer
 │   │   ├── keys.rs help.rs settings_ui.rs  # rebindable flight keys, help text, settings screen          [T28/T29]
 │   │   ├── hud.rs cockpit.rs pixfont.rs viewer.rs screens.rs starfield.rs
-│   └── bin/texgen.rs          # writes assets/textures/*.png
+│   └── bin/                   # texgen (textures), playtest (bot reports), server + netclient (T32)
 ├── assets/textures/*.png      # generated, committed (+ manifest.json, ../contact_sheet.png)
 └── docs…
 ```
@@ -46,7 +52,7 @@ Kagg2/
    tested. `gfx::*` reads the world and draws.
 2. **Fixed timestep (60 Hz)** accumulator in `main.rs`; render interpolates.
 3. **Input → `Command`.** The UI translates keys/mouse/crew-AI decisions into `Command`s each
-   tick. Replays, bots (T30) and netcode (T32) use the same path.
+   tick. Bots (`sim::bot`, T30) and netcode (`net`, T32) use the same path.
 4. **Determinism.** One seeded `Rng` in `World`; no `HashMap` iteration order dependence in the
    sim (use `Vec`/`BTreeMap`); no wall-clock in the sim.
 5. **Two worlds, one trait.** `SpaceWorld` and `BoardWorld` both implement
@@ -80,13 +86,35 @@ cool ambient, cel bands); glows/dust use an additive material. Sky = nebula sphe
   monsters/props drawn as small boxy meshes, pickups as billboards, viewmodel as 2D overlay
   quads or a small mesh with its own camera.
 
-## Multiplayer seam (T32, not now)
-`Seat { station, controller: Controller::{CrewAi, Human(PlayerId)} }`. Server runs `step` with
-commands from all humans + crew AI; clients render snapshots. Nothing in M0–M4 may assume a
-single human except the `Tab` pause.
+## Multiplayer (T32, as built)
+`net::server::Server` owns a `World` and a `MissionState`. Clients (`net::client::Client`) connect
+over TCP (`std::net`, non-blocking, length-prefixed binary frames, protocol version in `Hello`),
+take stations (`net::station_of(&Command)` says which station owns a command), press ready, and
+send only `Command`s. The server validates the seat, steps the sim at 60 Hz (crew AI keeps every
+automatable station nobody holds), and broadcasts a `Snapshot` (nearest 160 entities + the
+flagship's vitals + the mission objective) at 20 Hz. Everything read from the network is bounds
+checked (`wire.rs`): frames over 256 KiB, NaN floats, unknown tags and trailing bytes drop the
+client. No encryption or authentication: LAN only. **Not done:** a graphical client (the game
+UI still renders its own local `World`), boarding and the dock screen over the network (they
+mutate state outside `Command`s), reconnects.
+
+## Co-op boarding (T33, as built)
+`BoardWorld.mates` holds up to 3 extra `Player`s. `step_team(dt, &[Input])` runs each member's
+movement/fire/use/pickup by swapping them into `self.player` (`with_player`), so single-player
+code paths are unchanged. Doors, keys (shared), objectives and the alarm are shared; each monster
+hunts the nearest living member and hears the nearest noise; the airlock needs the whole living
+party; defeat is everybody down. In the game the partners are AI (`board::bot::BoardBot`, press
+**P** on the objective screen, or `--board N --coop 2`); the same API takes human inputs.
+
+## Mission scripts (T34, as built)
+`sim::script::parse` compiles the `.k2m` text format to the campaign's own `Mission` data
+(strings are leaked once so the engine's `&'static` types stay unchanged); `register` hands out
+ids from 11; `mission::def` and `SectorId::for_mission` look scripts up. The game loads
+`$KAGG2_HOME/missions/*.k2m` at start-up and `--script FILE` plays one directly.
 
 ## Testing strategy
 - Unit tests per module (state machine, flight integration, damage math, level solvability).
 - Determinism test: same seed + same command stream → identical world hash.
-- Bot playtest (T30): headless runs of every mission.
+- Bot playtest (T30): `cargo run --release --bin playtest` flies and boards every mission at three
+  difficulties and prints win rates; `playtest bench` times the sim (T31).
 - `cargo test` must pass without a display.

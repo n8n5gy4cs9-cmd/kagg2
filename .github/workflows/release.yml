@@ -1,0 +1,32 @@
+# Release builds for macOS, Linux and Windows (T31). Not run locally: it needs a GitHub runner.
+name: release
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Linux system libraries (miniquad, ALSA)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev libxi-dev libgl1-mesa-dev libasound2-dev pkg-config
+      - name: Build, test and package
+        shell: bash
+        run: tools/release.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kagg2-${{ matrix.os }}
+          path: dist/*.tar.gz
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kagg2-${{ matrix.os }}-zip
+          path: dist/*.zip
+          if-no-files-found: ignore

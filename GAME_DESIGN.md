@@ -183,3 +183,19 @@ A seat = (station, controller) where controller is `CrewAi` or `Human(player_id)
 - **Settings** (`~/.kagg2/settings.txt`, or `$KAGG2_HOME`): difficulty scale Thrall 0.7 / Karl 1.0 / Jarl 1.4 (enemy aim and boarding damage), volume, music, mouse sensitivity, invert-Y, 26 flight keys.
   **Save** (`save.txt`): next mission, credits, upgrades, ending; written after each won mission. Dev skip: `KAGGA_DEV=1` enables F9.
 - **Help:** F8 = overlay for the open station tab, boarding card on the objective screen, menu Help screen (flight, boarding, each station, tips).
+
+## 10. As built in M4–M5 (v0.35)
+- **Balance (T30)** — all knobs in `src/balance.rs`: difficulty scale 0.7 / 1.0 / 1.4; boarding party starts with armour 40 and a scatter-gun (20 shells);
+  monster damage to the party ×0.25 (hit chance scales by half of the difficulty step); monsters hear gunfire at 22 m; one extra pickup per room;
+  extra-monster chance 20 % per size step per room (sizes 1–5 average 7 / 14 / 19 / 27 / 37 monsters); sabotage fuse = max(45 s, walk back × 1.6 + 20 s).
+  Campaign capital ships: Frost Command = station size 3, Bulwark = bridge size 4, Aegis Prime = bridge size 5.
+  Bots found and fixed: fleeing ships now jump to warp when 9 km clear of every enemy (a chase could never end); mission 10's second squadron arrives after 45 s
+  (the opening was an alpha strike that killed a stock ship in 12 s); sabotage fuse scaled to the level (45 s was unwinnable on deep levels).
+  `cargo run --release --bin playtest` prints the tables; `playtest N boarding` the boarding table; `playtest N MISSION` one mission; `playtest bench` timings.
+- **Release (T31)** — `[profile.release]` thin LTO, one codegen unit, stripped. Sim cost per 60 Hz step: about 2–5 µs in a fight, about 20 µs in a size-5 boarding level
+  with a party of three (budget 16 667 µs), so frame time is all rendering; on an Apple-silicon Mac the game averages about 10 ms per frame in space and boarding scenes.
+  `tools/release.sh` runs checks and builds `dist/kagg2-<ver>-<os>-<arch>.tar.gz` (zip on Windows); `.github/workflows/release.yml` runs it on macOS, Linux and Windows runners.
+  `tools/licence_check.py` audits dependency licences, the GPL text and "no reference file shipped" and writes `LICENCES.md`.
+- **Multiplayer (T32)** — see `ARCHITECTURE.md`: seats per station, crew AI keeps the empty ones, server-authoritative 60 Hz sim, 20 Hz snapshots, std TCP. Text client only.
+- **Co-op boarding (T33)** — parties of up to 4 (host + 3 mates); the objective screen's **P** adds 0–2 AI shield-brothers who walk the same plan as the playtest bot.
+- **Mission scripts (T34)** — `.k2m` text files; format in the manual (`HTML/manual.html#mission-scripts`) and `src/sim/script.rs`.

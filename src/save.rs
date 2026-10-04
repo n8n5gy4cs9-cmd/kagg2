@@ -27,11 +27,7 @@ impl Difficulty {
 
     /// Scale applied to `World::difficulty` and `BoardWorld::difficulty`.
     pub fn scale(self) -> f32 {
-        match self {
-            Difficulty::Thrall => 0.7,
-            Difficulty::Karl => 1.0,
-            Difficulty::Jarl => 1.4,
-        }
+        crate::balance::DIFFICULTY_SCALE[self as usize]
     }
 
     fn code(self) -> u8 {
@@ -183,6 +179,11 @@ impl SaveGame {
         }
         have_mission.then_some(s)
     }
+}
+
+/// Folder scanned for mod mission scripts (`*.k2m`, see `sim::script`).
+pub fn missions_dir() -> PathBuf {
+    dir().join("missions")
 }
 
 fn dir() -> PathBuf {

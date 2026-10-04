@@ -303,7 +303,9 @@ pub fn think(
     // --- senses
     if !m.alerted {
         let seen = los && dist < 32.0 && m.forward().dot(to_player.normalize_or_zero()) > 0.1;
-        let heard = senses.noise.is_some_and(|n| n.distance(m.pos) < 30.0);
+        let heard = senses
+            .noise
+            .is_some_and(|n| n.distance(m.pos) < crate::balance::BOARD_HEARING);
         if seen || heard {
             m.alerted = true;
             m.state = State::Run;
@@ -390,7 +392,9 @@ pub fn think(
                     Attack::Ranged {
                         damage, cooldown, ..
                     } => {
-                        let chance = ((0.85 - dist * 0.018) * senses.difficulty).clamp(0.12, 0.9);
+                        let chance = ((0.85 - dist * 0.018)
+                            * crate::balance::hit_scale(senses.difficulty))
+                        .clamp(0.12, 0.9);
                         let moving_bonus = if p.vel.length() > 3.0 { 0.75 } else { 1.0 };
                         ev.push(MEvent::Fire {
                             damage,

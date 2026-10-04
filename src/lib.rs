@@ -3,9 +3,12 @@
 pub mod app;
 pub mod assets;
 pub mod audio;
+pub mod balance;
 pub mod board;
 pub mod gfx;
 pub mod meshgen;
+pub mod net;
+pub mod playtest;
 pub mod save;
 pub mod sim;
 pub mod story;

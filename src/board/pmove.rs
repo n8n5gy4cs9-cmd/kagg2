@@ -10,7 +10,7 @@ use super::weapons::{Ammo, Weapon};
 pub const RADIUS: f32 = 0.4;
 pub const EYE: f32 = 1.6;
 pub const EYE_CROUCH: f32 = 1.0;
-const MAX_SPEED: f32 = 6.5;
+pub const MAX_SPEED: f32 = 6.5;
 const CROUCH_SPEED: f32 = 3.0;
 const ACCEL: f32 = 10.0;
 const AIR_ACCEL: f32 = 1.0;
@@ -69,6 +69,9 @@ impl Player {
         let mut weapons = [false; 6];
         weapons[Weapon::Axe.idx()] = true;
         weapons[Weapon::Blaster.idx()] = true;
+        weapons[Weapon::Scatter.idx()] = true;
+        let mut ammo = [0; 4];
+        ammo[Ammo::Shells.idx()] = crate::balance::BOARD_START_SHELLS;
         Player {
             pos,
             vel: Vec3::ZERO,
@@ -78,10 +81,10 @@ impl Player {
             crouching: false,
             health: 100.0,
             max_health: 100.0,
-            armor: 0,
+            armor: crate::balance::BOARD_START_ARMOR,
             weapons,
             current: Weapon::Blaster,
-            ammo: [0; 4],
+            ammo,
             keys: [false; 3],
             cooldown: 0.0,
             kick: 1.0,

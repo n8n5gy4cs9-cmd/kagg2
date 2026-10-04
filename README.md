@@ -3,9 +3,9 @@
 **Mars Vikings vs. Earth Minions.** Captain the longship *Huginn* through a simplified
 bridge-sim space war (inspired by *Space Nerds In Space*), then storm disabled enemy ships and
 bases in first-person boarding actions (inspired by *Quake 2*). Written in Rust. Single player
-first; multiplayer is an optional future goal.
+first; a headless LAN multiplayer server, co-op boarding with AI partners and mission scripting are included.
 
-> Status: T01–T29 done (M0 foundation, M1 space, M2 boarding, M3 campaign: 10 missions, save/settings, tutorial/help); building task by task — see [tasks.md](tasks.md).
+> Status: T01–T34 done (M0–M5: foundation, space, boarding, 10-mission campaign, balance + bot playtest, release tooling, LAN server, co-op boarding, mission scripts) — see [tasks.md](tasks.md).
 
 ## Run
 ```sh
@@ -15,6 +15,11 @@ cargo run --release -- --viewer  # model viewer (left/right = next model)
 cargo run --release -- --space mars   # jump straight into a sector
 cargo test --release
 ./run.sh [fight|dock|board|tab N|sector NAME|viewer|test|shot]   # quick launcher, see header of run.sh
+cargo run --release -- --script missions/wolf-pack.k2m   # play a mod mission script (T34)
+cargo run --release -- --board 1 --size 3 --coop 2       # boarding with two AI shield-brothers (T33)
+cargo run --release --bin playtest                       # bots play all missions, win-rate table (T30)
+cargo run --release --bin server -- --mission 2          # LAN server (T32); clients: --bin netclient
+tools/release.sh                                         # checks + optimised build + dist/ archive (T31)
 ```
 
 Flight controls: **W/S** throttle, **A/D** yaw, **↑/↓** pitch, **Q/E** roll, **←/→** strafe,
@@ -36,6 +41,7 @@ Combat/stations: **Enter**/click lances, **Z** torpedo, **V** missile (lock with
 | [ASSETS.md](ASSETS.md) | Generated texture/mesh/sound lists |
 | [HANDOFF.md](HANDOFF.md) | Session notes: what's done, next, how to resume |
 | [CREDITS.md](CREDITS.md) | Licences and credits |
+| [LICENSE](LICENSE) / [LICENCES.md](LICENCES.md) | GPL-2.0 text; third-party crate licence audit |
 
 ## Licence
-GPL-2.0-or-later (see [CREDITS.md](CREDITS.md)).
+GPL-2.0-or-later (see [LICENSE](LICENSE) and [CREDITS.md](CREDITS.md)).

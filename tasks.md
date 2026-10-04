@@ -36,25 +36,12 @@ Details/acceptance for every task: `PLAN.md`. Do tasks in order unless told othe
 - [x] **T28** Save/load (`~/.kagg2`), settings screen: difficulty Thrall/Karl/Jarl, volume, music, mouse sensitivity, invert-Y, 26 rebindable flight keys _(v0.30.0)_
 - [x] **T29** Tutorial (mission 1 objectives) + help: F8 station overlay, boarding controls card, main-menu Help screen _(v0.30.0)_
 
+- [x] **T30** Balance pass + headless bot playtest harness: `sim::bot`, `board::bot`, `playtest` + `bin/playtest`, all tunables in `balance.rs`, fixes found by the bots _(v0.31.0)_
+- [x] **T31** Release profile (thin LTO), `tools/release.sh`, CI matrix (macOS/Linux/Windows), sim benchmark, frame timing, licence audit + `LICENSE`/`LICENCES.md` _(v0.32.0)_
+- [x] **T32** Multiplayer: server-authoritative sim, std-TCP wire protocol, lobby, seat/station assignment, snapshots, `bin/server` + `bin/netclient` (headless; no graphical client) _(v0.33.0)_
+- [x] **T33** Co-op boarding: `BoardWorld` parties of up to 4, shared doors/keys/objectives, AI shield-brothers (`P` on the objective screen, `--coop N`) _(v0.34.0)_
+- [x] **T34** Mission scripting: `.k2m` format, parser/validator, registry (ids 11+), `--script`, `~/.kagg2/missions/` loader, example `missions/wolf-pack.k2m` _(v0.35.0)_
+
 ## ⬜ Undone
 
-### M0 — Foundation
-_(all done)_
-
-### M1 — Space
-_(all done)_
-
-### M2 — Boarding (Quake 2 style)
-_(all done)_
-
-### M3 — Campaign
-_(all done)_
-
-### M4 — Polish
-- [ ] **T30** Balance pass + headless bot playtest harness
-- [ ] **T31** Performance, release builds (macOS/Linux/Windows), final docs, licence check
-
-### M5 — Optional / future
-- [ ] **T32** Multiplayer: server-authoritative sim, networking, lobby, station assignment
-- [ ] **T33** Co-op boarding
-- [ ] **T34** Mission scripting file format / modding hooks
+_(none — all of T01–T34 are done; see `HANDOFF.md` for known gaps and ideas)_

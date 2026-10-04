@@ -1,10 +1,17 @@
 [package]
 name = "kagg2"
-version = "0.30.0"
+version = "0.35.0"
 edition = "2024"
 default-run = "kagg2"
+license = "GPL-2.0-or-later"
+description = "Kagg2: Mars Vikings against the Earth Minions - bridge simulator and boarding FPS"
 
 [dependencies]
 macroquad = { version = "0.4.16", features = ["audio"] }
 png = "0.17"
 glam = "0.27"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"

@@ -19,6 +19,7 @@ use super::stations::{self, Frame, Tab, UiState};
 use super::ui::{Action, Ctx};
 use crate::assets::Assets;
 use crate::audio::Sfx;
+use crate::sim::boarding;
 use crate::sim::comms::{self, Reply};
 use crate::sim::event::{Event, Ordnance};
 use crate::sim::flight::{FORWARD, RIGHT, UP};
@@ -208,7 +209,6 @@ impl SpaceScene {
     /// Boarding is possible against a hostile ship that is disabled — or crippled (hull < 60 %
     /// with its shields down) — and close enough to clamp on to.
     pub fn boardable(&self) -> Option<BoardInfo> {
-        use crate::board::Theme;
         let me = self.world.player.and_then(|p| self.world.get(p))?;
         let id = self.target?;
         let t = self.world.get(id)?;
@@ -223,16 +223,7 @@ impl SpaceScene {
             return None;
         }
         let seed = self.world.tick ^ ((id.index as u64) << 32);
-        let (theme, size) = match (t.label, o.class_name) {
-            (l, _) if l.starts_with("Prison Barge") => (Theme::PrisonBarge, 3),
-            (l, _) if l.starts_with("Courier") => (Theme::Corvette, 2),
-            (_, "Interceptor") => (Theme::Corvette, 1),
-            (_, "Cutter") if seed.is_multiple_of(2) => (Theme::PrisonBarge, 2),
-            (_, "Cutter") => (Theme::Corvette, 2),
-            (_, "Frigate") => (Theme::Station, 3),
-            (_, "Destroyer") => (Theme::Station, 4),
-            _ => (Theme::DreadnoughtBridge, 5),
-        };
+        let (theme, size) = crate::board::theme_for(t.label, o.class_name, seed);
         Some(BoardInfo {
             theme,
             size,
@@ -251,19 +242,13 @@ impl SpaceScene {
         if let Some(m) = self.mission.as_mut() {
             m.on_boarding(&info.label, res.objective, won && res.objective_done);
         }
-        let casualties = (res.damage_taken / 25.0).round() as u32;
-        let me = self.world.player;
-        if let Some(o) = me
-            .and_then(|p| self.world.get_mut(p))
-            .and_then(|e| e.ops.as_deref_mut())
-        {
-            o.cargo.credits += res.credits;
-            o.sys.crew = o.sys.crew.saturating_sub(casualties);
-            if won {
-                o.torpedoes = (o.torpedoes + 2).min(o.max_torpedoes());
-                o.missiles = (o.missiles + 3).min(o.max_missiles());
-            }
-        }
+        let casualties = boarding::apply(
+            &mut self.world,
+            info.target,
+            won,
+            res.credits,
+            res.damage_taken,
+        );
         let line = match (won, res.objective) {
             (true, Objective::CaptureBridge) => format!(
                 "{} CAPTURED - {} KILLS, +{} CR",
@@ -282,10 +267,7 @@ impl SpaceScene {
         if casualties > 0 {
             self.ui.say(format!("{casualties} CREW LOST"));
         }
-        if won && let Some(t) = self.world.get(info.target).map(|e| e.pos) {
-            self.world
-                .push_event(Event::Explosion { pos: t, size: 60.0 });
-            self.world.despawn(info.target);
+        if won {
             self.target = None;
         }
     }

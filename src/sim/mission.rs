@@ -798,15 +798,16 @@ static M10: [Stage; 3] = [
                 Player,
                 [0.0, 0.0, -4000.0],
                 Role::Attack,
-                &["destroyer", "frigate", "cutter", "cutter"],
+                &["destroyer", "cutter", "cutter"],
                 None,
             ),
+            // the second squadron arrives later so the opening is not an alpha strike (T30)
             spawn(
-                0.0,
+                45.0,
                 Player,
                 [3000.0, 300.0, -3000.0],
                 Role::Attack,
-                &["frigate", "interceptor", "interceptor"],
+                &["frigate", "frigate", "interceptor", "interceptor"],
                 None,
             ),
             say(
@@ -878,8 +879,11 @@ static MISSIONS: [Mission; 10] = [
     Mission { stages: &M10 },
 ];
 
-/// Definition of campaign mission `id` (1-based).
+/// Definition of mission `id` (1-based): the campaign `1..=10`, then registered scripts.
 pub fn def(id: u8) -> Option<&'static Mission> {
+    if id > MISSIONS.len() as u8 {
+        return super::script::get(id).map(|s| s.mission);
+    }
     MISSIONS.get(usize::from(id).checked_sub(1)?)
 }
 
@@ -1022,6 +1026,13 @@ impl MissionState {
         self.result
             .is_none()
             .then(|| self.stage_def().map(|s| s.text))?
+    }
+
+    /// Goal of the current stage (what the playtest bot works toward).
+    pub fn goal(&self) -> Option<Goal> {
+        self.result
+            .is_none()
+            .then(|| self.stage_def().map(|s| s.goal))?
     }
 
     /// `(current, total)` stage numbers, 1-based.

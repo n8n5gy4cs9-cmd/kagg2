@@ -10,6 +10,7 @@ use super::render3d::{Pose, Renderer, Shade, draw_billboard, draw_billboard_uv, 
 use super::sound::Mixer;
 use crate::assets::Assets;
 use crate::audio::Sfx;
+use crate::board::bot::BoardBot;
 use crate::board::level::{CELL, ItemKind, Key, Level, Objective, RoomKind, Theme, WALL_H};
 use crate::board::monster::{State, stats};
 use crate::board::pmove::Input;
@@ -84,6 +85,9 @@ pub struct BoardScene {
     /// Mouse-look multiplier and Y inversion from the settings.
     pub sens: f32,
     pub invert_y: bool,
+    /// AI shield-brothers fighting beside the player (`0..=2`, T33); `P` on the objective screen.
+    pub partners: usize,
+    bots: Vec<BoardBot>,
 }
 
 /// One-element objective list for a campaign-forced objective.
@@ -119,6 +123,8 @@ impl BoardScene {
             difficulty: 1.0,
             sens: 1.0,
             invert_y: false,
+            partners: 0,
+            bots: Vec::new(),
         }
     }
 
@@ -144,6 +150,8 @@ impl BoardScene {
         self.meshes = build_meshes(&level, assets);
         let mut world = BoardWorld::new(level, self.info.seed);
         world.difficulty = self.difficulty;
+        world.add_mates(self.partners);
+        self.bots = (0..self.partners).map(|_| BoardBot::new(0.8)).collect();
         self.health_start = world.player.health;
         self.world = Some(world);
         if self.auto_start
@@ -235,6 +243,9 @@ impl BoardScene {
                         return;
                     }
                 }
+                if is_key_pressed(KeyCode::P) {
+                    self.partners = (self.partners + 1) % 3;
+                }
                 if is_key_pressed(KeyCode::Enter) {
                     self.start(assets);
                 } else if is_key_pressed(KeyCode::Escape) {
@@ -296,7 +307,11 @@ impl BoardScene {
         while self.acc >= STEP {
             self.acc -= STEP;
             input.use_key = std::mem::take(&mut use_left);
-            events.extend(w.step(STEP, &input));
+            let mut inputs = vec![input];
+            for (k, bot) in self.bots.iter_mut().enumerate() {
+                inputs.push(w.with_player(k + 1, |w| bot.act(w)));
+            }
+            events.extend(w.step_team(STEP, &inputs));
             input.weapon = None;
             if w.outcome != Outcome::InProgress {
                 break;
@@ -452,6 +467,14 @@ impl BoardScene {
                 ui,
                 Color::new(0.5, 0.5, 0.55, 1.0),
             );
+            pixfont::draw_centered(
+                assets,
+                &format!("P: SHIELD-BROTHERS (AI) {}", self.partners),
+                sw / 2.0,
+                sh * 0.8 + 10.0 * ui,
+                ui,
+                Color::new(0.21, 0.78, 0.88, 1.0),
+            );
             for (i, line) in super::help::BOARDING.iter().enumerate() {
                 pixfont::draw_centered(
                     assets,
@@ -557,6 +580,17 @@ impl BoardScene {
                         Quat::from_rotation_y(if p.freed { self.t } else { 0.5 }),
                         1.0,
                     ),
+                    lit,
+                );
+            }
+        }
+        for m in w.mates.iter().filter(|m| m.health > 0.0) {
+            if let Some(model) = assets.model("marine") {
+                draw_model(
+                    assets,
+                    model,
+                    "marine_armor",
+                    Pose::new(m.pos, Quat::from_rotation_y(m.yaw), 1.0),
                     lit,
                 );
             }

@@ -142,6 +142,10 @@ struct Cli {
     fire: bool,
     board: Option<u32>,
     size: u32,
+    /// AI shield-brothers for `--board` (T33).
+    coop: usize,
+    /// Mission script to play (T34): `--script file.k2m`.
+    script: Option<String>,
 }
 
 fn parse_vec3(s: &str) -> Option<Vec3> {
@@ -176,6 +180,8 @@ fn parse_cli() -> Cli {
             "--fire" => cli.fire = true,
             "--board" => cli.board = next.as_deref().and_then(|n| n.parse().ok()).or(Some(1)),
             "--size" => cli.size = next.as_deref().and_then(|n| n.parse().ok()).unwrap_or(2),
+            "--coop" => cli.coop = next.as_deref().and_then(|n| n.parse().ok()).unwrap_or(1),
+            "--script" => cli.script = next.clone(),
             "--tab" => cli.tab = next.as_deref().and_then(|n| n.parse().ok()),
             "--look" => cli.look = next.as_deref().and_then(parse_vec3),
             "--pos" => cli.pos = next.as_deref().and_then(parse_vec3),
@@ -203,7 +209,7 @@ fn save_shot(path: &str) {
 
 #[macroquad::main(window_conf)]
 async fn main() {
-    let cli = parse_cli();
+    let mut cli = parse_cli();
     clear_background(Color::new(0.02, 0.02, 0.05, 1.0));
     draw_text("Loading assets...", 40.0, 60.0, 32.0, WHITE);
     next_frame().await;
@@ -247,6 +253,7 @@ async fn main() {
         .as_ref()
         .map(|name| Viewer::new(&assets, name.as_deref()));
     let mut frame = 0u32;
+    let (mut frame_ms_sum, mut frame_ms_max) = (0.0f64, 0.0f64);
 
     let start_scene = |sector: SectorId, cli: &Cli, settings: &Settings| {
         let mut sc = SpaceScene::new(sector, 1);
@@ -298,11 +305,32 @@ async fn main() {
             force: None,
         });
         b.auto_start = true;
+        b.partners = cli.coop.min(2);
         board = Some(b);
         state = AppState::Boarding { mission: 1 };
     }
+    for (path, res) in kagg2::sim::script::load_dir(&save::missions_dir()) {
+        match res {
+            Ok(id) => eprintln!("mod mission {id}: {}", path.display()),
+            Err(e) => eprintln!("mod mission {}: {e}", path.display()),
+        }
+    }
+    let mut script_mission = None;
+    if let Some(path) = &cli.script {
+        match kagg2::sim::script::load_file(std::path::Path::new(path)) {
+            Ok(id) => {
+                cli.space = Some(SectorId::for_mission(id));
+                script_mission = Some(id);
+            }
+            Err(e) => eprintln!("cannot load script {path}: {e}"),
+        }
+    }
     if let Some(sector) = cli.space {
-        scene = Some(start_scene(sector, &cli, &settings));
+        let mut sc = start_scene(sector, &cli, &settings);
+        if let Some(id) = script_mission {
+            sc.start_mission(id, &Carry::default(), settings.difficulty.scale());
+        }
+        scene = Some(sc);
         state = AppState::Space { mission: 1 };
     }
 
@@ -495,9 +523,20 @@ async fn main() {
                 YELLOW,
             );
         }
+        if frame > 10 {
+            frame_ms_sum += f64::from(dt) * 1000.0;
+            frame_ms_max = frame_ms_max.max(f64::from(dt) * 1000.0);
+        }
         if let Some(path) = &cli.shot
             && frame >= cli.frames
         {
+            // frame timing for the T31 performance check (vsync caps the average near 16.7 ms)
+            let n = f64::from(frame.saturating_sub(10)).max(1.0);
+            eprintln!(
+                "frames {frame}: avg {:.2} ms, worst {:.2} ms",
+                frame_ms_sum / n,
+                frame_ms_max
+            );
             save_shot(path);
             break;
         }

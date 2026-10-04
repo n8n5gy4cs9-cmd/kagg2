@@ -80,7 +80,9 @@ pub struct BoardWorld {
     pub env: Env,
     pub difficulty: f32,
     rng: Rng,
-    noise: Option<Vec3>,
+    /// Co-op partners (T33); empty in a single-player boarding. Index `k` here is player `k + 1`.
+    pub mates: Vec<Player>,
+    noises: Vec<Vec3>,
     lock_msg_cd: f32,
 }
 
@@ -119,7 +121,8 @@ impl BoardWorld {
             env: Env::default(),
             difficulty: 1.0,
             rng,
-            noise: None,
+            mates: Vec::new(),
+            noises: Vec::new(),
             lock_msg_cd: 0.0,
         }
     }
@@ -203,7 +206,7 @@ impl BoardWorld {
         self.player.cooldown = def.cooldown;
         self.player.kick = 0.0;
         ev.push(BEvent::Fired(w));
-        self.noise = Some(self.player.pos);
+        self.noises.push(self.player.pos);
         let eye = self.player.eye();
         let look = self.player.look();
         if w == Weapon::Mjolnir {
@@ -245,7 +248,7 @@ impl BoardWorld {
 
     fn explode(&mut self, at: Vec3, ev: &mut Vec<BEvent>) {
         ev.push(BEvent::Explosion(at));
-        self.noise = Some(at);
+        self.noises.push(at);
         const R: f32 = 5.0;
         for i in 0..self.monsters.len() {
             if !self.monsters[i].alive() {
@@ -256,25 +259,40 @@ impl BoardWorld {
                 self.hurt_monster(i, 120.0 * (1.0 - (d / (R + 1.0)).min(1.0)).max(0.2), ev);
             }
         }
-        let d = self.player.eye().distance(at);
-        if d < R {
-            let dmg = 60.0 * (1.0 - d / R);
-            let real = self.player.hurt(dmg);
-            ev.push(BEvent::PlayerHurt(real));
+        for k in 0..=self.mates.len() {
+            let p = if k == 0 {
+                &mut self.player
+            } else {
+                &mut self.mates[k - 1]
+            };
+            let d = p.eye().distance(at);
+            if p.health > 0.0 && d < R {
+                let real = p.hurt(60.0 * (1.0 - d / R));
+                if k == 0 {
+                    ev.push(BEvent::PlayerHurt(real));
+                }
+            }
         }
     }
 
     fn update_doors(&mut self, dt: f32, ev: &mut Vec<BEvent>) {
         self.lock_msg_cd = (self.lock_msg_cd - dt).max(0.0);
-        let pp = self.player.pos;
+        let live: Vec<(Vec3, [bool; 3])> = std::iter::once(&self.player)
+            .chain(self.mates.iter())
+            .filter(|p| p.health > 0.0)
+            .map(|p| (p.pos, p.keys))
+            .collect();
         for i in 0..self.level.doors.len() {
             let c = {
                 let d = &self.level.doors[i];
                 self.level.centre(d.x, d.y)
             };
-            let near = c.distance(pp) < 2.8;
+            let near = live.iter().any(|(p, _)| c.distance(*p) < 2.8);
             let lock = self.level.doors[i].lock;
-            let may = lock.is_none_or(|k| self.player.keys[k as usize]);
+            let may = lock.is_none_or(|k| {
+                live.iter()
+                    .any(|(p, keys)| c.distance(*p) < 2.8 && keys[k as usize])
+            });
             if near && may {
                 self.level.doors[i].hold = 2.0;
             } else if near
@@ -408,6 +426,10 @@ impl BoardWorld {
         let near = |t: (i32, i32), level: &Level| level.centre(t.0, t.1).distance(pp) < 3.0;
         // airlock: leave
         if self.level.rooms[0].contains(self.level.tile_of(pp).0, self.level.tile_of(pp).1) {
+            if !self.team_in_airlock() {
+                ev.push(BEvent::Message("WAIT FOR YOUR SHIELD-BROTHERS".into()));
+                return;
+            }
             self.outcome = if self.progress.done {
                 Outcome::Won
             } else {
@@ -423,10 +445,19 @@ impl BoardWorld {
             Objective::Sabotage
                 if near(self.level.goal, &self.level) && self.progress.charges.is_none() =>
             {
-                self.progress.charges = Some(45.0);
-                ev.push(BEvent::Message(
-                    "CHARGES SET - 45 SECONDS TO REACH THE AIRLOCK".into(),
-                ));
+                // time to walk back (plus slack) so deep levels stay winnable
+                let here = self.level.tile_of(self.player.pos);
+                let back = self
+                    .level
+                    .path(here, self.level.rooms[0].center())
+                    .map_or(0, |p| p.len());
+                let secs = (back as f32 * CELL / super::pmove::MAX_SPEED * 1.6 + 20.0)
+                    .max(crate::balance::BOARD_FUSE_MIN)
+                    .round();
+                self.progress.charges = Some(secs);
+                ev.push(BEvent::Message(format!(
+                    "CHARGES SET - {secs:.0} SECONDS TO REACH THE AIRLOCK"
+                )));
                 self.complete(ev);
             }
             Objective::CaptureBridge
@@ -489,31 +520,108 @@ impl BoardWorld {
         }
     }
 
-    /// Advance one step.
+    /// Advance one step (single player).
     pub fn step(&mut self, dt: f32, input: &Input) -> Vec<BEvent> {
+        self.step_team(dt, std::slice::from_ref(input))
+    }
+
+    /// Add `n` co-op partners (up to 3 in all) at the airlock, next to the host.
+    pub fn add_mates(&mut self, n: usize) {
+        for i in 0..n.min(3usize.saturating_sub(self.mates.len())) {
+            let mut p = Player::new(self.player.pos + Vec3::new(1.4 * (i as f32 + 1.0), 0.0, 0.0));
+            p.yaw = self.player.yaw;
+            self.mates.push(p);
+        }
+    }
+
+    /// Run `f` with player `k` (`0` = host, `k > 0` = `mates[k - 1]`) as `self.player`.
+    pub fn with_player<R>(&mut self, k: usize, f: impl FnOnce(&mut Self) -> R) -> R {
+        if k > 0 {
+            std::mem::swap(&mut self.player, &mut self.mates[k - 1]);
+        }
+        let r = f(self);
+        if k > 0 {
+            std::mem::swap(&mut self.player, &mut self.mates[k - 1]);
+        }
+        r
+    }
+
+    /// Every living party member stands in the airlock.
+    fn team_in_airlock(&self) -> bool {
+        std::iter::once(&self.player)
+            .chain(self.mates.iter())
+            .filter(|p| p.health > 0.0)
+            .all(|p| {
+                let (x, y) = self.level.tile_of(p.pos);
+                self.level.rooms[0].contains(x, y)
+            })
+    }
+
+    /// Index (`0` = host) of the living party member nearest to `pos`.
+    fn nearest_player(&self, pos: Vec3) -> usize {
+        std::iter::once(&self.player)
+            .chain(self.mates.iter())
+            .enumerate()
+            .filter(|(_, p)| p.health > 0.0)
+            .min_by(|a, b| a.1.pos.distance(pos).total_cmp(&b.1.pos.distance(pos)))
+            .map_or(0, |(i, _)| i)
+    }
+
+    /// Advance one step for the whole party: `inputs[0]` drives the host, `inputs[k]` drives
+    /// `mates[k - 1]` (missing entries mean "no input"). Objectives, doors, keys and monsters
+    /// are shared; the action ends in defeat only when everybody is down.
+    pub fn step_team(&mut self, dt: f32, inputs: &[Input]) -> Vec<BEvent> {
         let mut ev = Vec::new();
         if self.outcome != Outcome::InProgress {
             return ev;
         }
         self.time += dt;
-        self.noise = None;
-        self.player.cooldown = (self.player.cooldown - dt).max(0.0);
-        self.player.kick += dt;
-        pmove(&self.level, &mut self.player, input, self.env, dt);
-        if let Some(n) = input.weapon
-            && let Some(w) = Weapon::ALL.get(n)
-            && self.player.weapons[w.idx()]
-        {
-            self.player.current = *w;
-        }
-        if input.fire {
-            self.fire(&mut ev);
-        }
-        if input.use_key {
-            self.use_key(&mut ev);
+        self.noises.clear();
+        let none = Input::default();
+        for k in 0..=self.mates.len() {
+            let input = inputs.get(k).unwrap_or(&none);
+            self.with_player(k, |w| {
+                if w.player.health <= 0.0 {
+                    return;
+                }
+                w.player.cooldown = (w.player.cooldown - dt).max(0.0);
+                w.player.kick += dt;
+                pmove(&w.level, &mut w.player, input, w.env, dt);
+                if let Some(n) = input.weapon
+                    && let Some(wp) = Weapon::ALL.get(n)
+                    && w.player.weapons[wp.idx()]
+                {
+                    w.player.current = *wp;
+                }
+                if input.fire {
+                    w.fire(&mut ev);
+                }
+                if input.use_key {
+                    w.use_key(&mut ev);
+                }
+            });
         }
         self.update_doors(dt, &mut ev);
-        self.pickup(&mut ev);
+        for k in 0..=self.mates.len() {
+            self.with_player(k, |w| {
+                if w.player.health > 0.0 {
+                    w.pickup(&mut ev);
+                }
+            });
+        }
+        if !self.mates.is_empty() {
+            // the party shares keycards
+            let mut keys = self.player.keys;
+            for m in &self.mates {
+                for (k, has) in m.keys.iter().enumerate() {
+                    keys[k] |= *has;
+                }
+            }
+            self.player.keys = keys;
+            for m in &mut self.mates {
+                m.keys = keys;
+            }
+        }
         // rockets
         let mut boom: Vec<Vec3> = Vec::new();
         for r in &mut self.rockets {
@@ -562,15 +670,25 @@ impl BoardWorld {
                 )
             })
             .collect();
-        let senses_noise = self.noise;
         for i in 0..self.monsters.len() {
             let mut m = std::mem::replace(
                 &mut self.monsters[i],
                 Monster::new(MonsterKind::Grunt, Vec3::ZERO, 0.0),
             );
+            // each monster hunts the nearest living party member and hears the nearest noise
+            let target = self.nearest_player(m.pos);
+            let noise = self
+                .noises
+                .iter()
+                .copied()
+                .min_by(|a, b| a.distance(m.pos).total_cmp(&b.distance(m.pos)));
             let senses = Senses {
-                player: &self.player,
-                noise: senses_noise,
+                player: if target == 0 {
+                    &self.player
+                } else {
+                    &self.mates[target - 1]
+                },
+                noise,
                 difficulty: self.difficulty,
             };
             let events = think(
@@ -585,11 +703,22 @@ impl BoardWorld {
             for e in events {
                 match e {
                     MEvent::Fire { damage, hit, melee } => {
+                        let victim = if target == 0 {
+                            &mut self.player
+                        } else {
+                            &mut self.mates[target - 1]
+                        };
                         if hit {
-                            let real = self.player.hurt(damage * self.difficulty.max(0.5));
-                            ev.push(BEvent::PlayerHurt(real));
+                            let real = victim.hurt(
+                                damage
+                                    * self.difficulty.max(0.5)
+                                    * crate::balance::BOARD_MONSTER_DAMAGE,
+                            );
+                            if target == 0 {
+                                ev.push(BEvent::PlayerHurt(real));
+                            }
                         } else if !melee {
-                            ev.push(BEvent::Impact(self.player.eye() + Vec3::new(0.3, 0.0, 0.3)));
+                            ev.push(BEvent::Impact(victim.eye() + Vec3::new(0.3, 0.0, 0.3)));
                         }
                     }
                     MEvent::Revive(idx) => {
@@ -609,10 +738,7 @@ impl BoardWorld {
         // sabotage countdown
         if let Some(t) = self.progress.charges {
             let nt = t - dt;
-            let in_airlock = {
-                let (x, y) = self.level.tile_of(self.player.pos);
-                self.level.rooms[0].contains(x, y)
-            };
+            let in_airlock = self.team_in_airlock();
             if nt <= 0.0 {
                 self.outcome = if in_airlock {
                     Outcome::Won
@@ -626,7 +752,7 @@ impl BoardWorld {
                 self.progress.charges = Some(nt);
             }
         }
-        if self.player.health <= 0.0 {
+        if self.player.health <= 0.0 && self.mates.iter().all(|m| m.health <= 0.0) {
             self.outcome = Outcome::Died;
         }
         let _ = (CELL, Tile::Floor, Key::Bronze);
@@ -853,7 +979,9 @@ mod tests {
         );
         assert!(w.progress.charges.is_some() && w.progress.done);
         w.player.health = 1e9;
-        for _ in 0..(60 * 50) {
+        let fuse = w.progress.charges.unwrap_or(0.0);
+        assert!(fuse >= crate::balance::BOARD_FUSE_MIN, "fuse {fuse}");
+        for _ in 0..(60.0 * (fuse + 2.0)) as u32 {
             w.step(1.0 / 60.0, &idle());
         }
         assert_eq!(w.outcome, Outcome::Died);
@@ -867,10 +995,28 @@ mod tests {
             },
         );
         w.player.pos = w.level.spawn_point();
-        for _ in 0..(60 * 50) {
+        let fuse = w.progress.charges.unwrap_or(0.0);
+        for _ in 0..(60.0 * (fuse + 2.0)) as u32 {
             w.step(1.0 / 60.0, &idle());
         }
         assert_eq!(w.outcome, Outcome::Won);
+    }
+
+    #[test]
+    fn the_fuse_is_longer_on_a_deeper_level() {
+        let fuse = |size| {
+            let mut w = world(Objective::Sabotage, Theme::Corvette, size);
+            w.player.pos = w.level.centre(w.level.goal.0, w.level.goal.1);
+            w.step(
+                1.0 / 60.0,
+                &Input {
+                    use_key: true,
+                    ..idle()
+                },
+            );
+            w.progress.charges.unwrap_or(0.0)
+        };
+        assert!(fuse(5) > fuse(1));
     }
 
     #[test]
@@ -933,5 +1079,60 @@ mod tests {
             )
         };
         assert_eq!(run(), run());
+    }
+}
+
+#[cfg(test)]
+mod coop_tests {
+    use super::*;
+    use crate::board::level::{Theme, generate};
+
+    fn team(n: usize) -> BoardWorld {
+        let mut w = BoardWorld::new(generate(5, Theme::Corvette, Objective::StealData, 1), 5);
+        w.add_mates(n);
+        w
+    }
+
+    #[test]
+    fn mates_stand_beside_the_host_and_are_capped() {
+        let w = team(5);
+        assert_eq!(w.mates.len(), 3);
+        assert!(w.mates.iter().all(|m| m.pos.distance(w.player.pos) < 6.0));
+        assert_eq!(team(0).mates.len(), 0);
+    }
+
+    #[test]
+    fn each_party_member_is_driven_by_its_own_input() {
+        let mut w = team(1);
+        let (h0, m0) = (w.player.pos, w.mates[0].pos);
+        let go = Input {
+            forward: 1.0,
+            ..Default::default()
+        };
+        for _ in 0..60 {
+            w.step_team(1.0 / 60.0, &[Input::default(), go]);
+        }
+        assert!(w.player.pos.distance(h0) < 0.01, "host stayed");
+        assert!(w.mates[0].pos.distance(m0) > 1.0, "partner walked");
+    }
+
+    #[test]
+    fn monsters_hunt_the_nearest_living_member_and_defeat_needs_everyone_down() {
+        let mut w = team(1);
+        // put the partner far from the host, next to a monster
+        let target = w.monsters[0].pos;
+        w.mates[0].pos = target + Vec3::new(2.0, 0.0, 0.0);
+        w.mates[0].health = 100.0;
+        assert_eq!(w.nearest_player(target), 1);
+        w.mates[0].health = 0.0;
+        assert_eq!(w.nearest_player(target), 0, "the dead are not targeted");
+        // host down, partner up: the action goes on; both down: defeat
+        w.player.health = 0.0;
+        w.mates[0].health = 50.0;
+        w.step_team(1.0 / 60.0, &[]);
+        assert_eq!(w.outcome, Outcome::InProgress);
+        w.mates[0].health = 0.0;
+        w.step_team(1.0 / 60.0, &[]);
+        assert_eq!(w.outcome, Outcome::Died);
     }
 }

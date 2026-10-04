@@ -7,6 +7,9 @@
 #   ./run.sh tab N [sector]  start with station tab N open (1 helm .. 7 map)
 #   ./run.sh sector NAME     fly a sector: mars phobos belt jupiter luna earth
 #   ./run.sh viewer [model]  model viewer
+#   ./run.sh playtest [N] [MISSION|boarding|bench]   bots play the missions (T30)
+#   ./run.sh script FILE.k2m play a mission script (T34)
+#   ./run.sh server [args]   LAN server (T32)
 #   ./run.sh test            fmt check, clippy, tests
 #   ./run.sh shot OUT.png [extra game args]   save a screenshot and exit
 set -euo pipefail
@@ -23,6 +26,9 @@ case "$mode" in
   sector) run --space "${1:-mars}" ;;
   viewer) run --viewer "$@" ;;
   shot)   out="${1:-shot.png}"; [ $# -gt 0 ] && shift; run --shot "$out" "$@" ;;
+  playtest) cargo run --release --quiet --bin playtest -- "$@" ;;
+  script) run --script "$@" ;;
+  server) cargo run --release --quiet --bin server -- "$@" ;;
   test)   cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test --release ;;
-  *) sed -n '2,12p' "$0"; exit 1 ;;
+  *) sed -n '2,16p' "$0"; exit 1 ;;
 esac
