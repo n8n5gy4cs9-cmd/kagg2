@@ -107,15 +107,20 @@ dock clamp, UI click/confirm/deny, engine hum (loop), ambient drone (loop), musi
 boarding: footsteps, door, blaster, shotgun, rattler, rocket, rail, axe, pain, die, pickup,
 alarm, reactor hum.
 
-## Level layouts (v0.37) — `src/board/maps.rs`
+## Level layouts (v0.38) — `src/board/maps.rs`
 Ships of size 2+ are boarded in **hand-authored, Quake-2-style base maps** (hub rooms, pillared halls,
 loops, key-locked shortcuts, alcoves) mirrored by seed; size 1 still uses the random room chain
 (`level::generate_random`). They are **original layouts, not copies of Quake 2 maps** (the reference
-repo ships no map data and the Quake 2 maps are commercial content). Maps: *Outer Base* (size 2–3,
+repo ships no map data and the Quake 2 maps are commercial content). Maps (v0.37 list): *Outer Base* (size 2–3,
 44×26), *Cargo Deck* (3–4, 60×34), *Citadel* (5, 66×38). Format: two ASCII layers (layout + things),
 legend in the file header; tests check rectangular layers, solvability for every objective and mirror,
 and that every locked door has its key.
-Flat grid only — no height, stairs or lifts yet.
+v0.38 adds **height and light**: a third layer gives every tile a floor height (half-metre steps, so
+stairs, daises and ramps), ceilings follow the room kind, risers and ceiling drops are drawn, and
+`*` `^` `&` things are lamps (baked into vertex light plus a ceiling fixture). Rooms are no longer
+boxes: octagons, circles, chamfered halls, pillar rings. Maps: *Landing Party* (size 1), *Outer Base*
+(2–3), *Temple Yard* (2–3, derived from the GPL Quake 2 map spirit2dm9, see `CREDITS.md`),
+*Cargo Deck* (3–4), *Citadel* (5). Still a heightfield: no overlapping floors, lifts or jump pads.
 
 ## What to replace later (everything below is a generated stand-in)
 Priority 1 = most visible to a player, 3 = least. Keep the **names** (and sizes) and the game picks

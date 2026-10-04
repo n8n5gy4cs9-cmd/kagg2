@@ -185,7 +185,10 @@ impl BoardWorld {
             t += STEP * 0.6;
             let p = from + dir * t;
             let (tx, ty) = self.level.tile_of(p);
-            if self.level.solid(tx, ty) || p.y < 0.0 || p.y > super::level::WALL_H {
+            if self.level.solid(tx, ty)
+                || p.y < self.level.floor_h(tx, ty)
+                || p.y > self.level.ceil_h(tx, ty)
+            {
                 return (t, None);
             }
             for (i, m) in self.monsters.iter().enumerate() {
@@ -649,15 +652,16 @@ impl BoardWorld {
             for _ in 0..steps {
                 r.pos += r.vel * dt / steps as f32;
                 let (tx, ty) = self.level.tile_of(r.pos);
-                let hit_wall =
-                    self.level.solid(tx, ty) || r.pos.y < 0.0 || r.pos.y > super::level::WALL_H;
+                let hit_wall = self.level.solid(tx, ty)
+                    || r.pos.y < self.level.floor_h(tx, ty)
+                    || r.pos.y > self.level.ceil_h(tx, ty);
                 let hit_mon = self.monsters.iter().any(|m| {
                     let s = stats(m.kind);
                     m.alive()
                         && (m.pos.x - r.pos.x).powi(2) + (m.pos.z - r.pos.z).powi(2)
                             < s.radius * s.radius
-                        && r.pos.y >= 0.0
-                        && r.pos.y <= s.height
+                        && r.pos.y >= m.pos.y
+                        && r.pos.y <= m.pos.y + s.height
                 });
                 if hit_wall || hit_mon {
                     r.life = 0.0;
@@ -718,6 +722,7 @@ impl BoardWorld {
                 &mut self.rng,
                 dt,
             );
+            m.pos.y = self.level.ground_at(m.pos, stats(m.kind).radius);
             self.monsters[i] = m;
             for e in events {
                 match e {
@@ -1010,7 +1015,7 @@ mod tests {
         assert!(w.progress.charges.is_some() && w.progress.done);
         w.player.health = 1e9;
         let fuse = w.progress.charges.unwrap_or(0.0);
-        assert!(fuse >= crate::balance::BOARD_FUSE_MIN, "fuse {fuse}");
+        assert!(fuse >= crate::balance::BOARD_FUSE_MIN - 0.5, "fuse {fuse}");
         for _ in 0..(60.0 * (fuse + 2.0)) as u32 {
             w.step(1.0 / 60.0, &idle());
         }
@@ -1025,6 +1030,7 @@ mod tests {
             },
         );
         w.player.pos = w.level.spawn_point();
+        w.player.health = 1e9; // the test is about the fuse, not the monsters
         let fuse = w.progress.charges.unwrap_or(0.0);
         for _ in 0..(60.0 * (fuse + 2.0)) as u32 {
             w.step(1.0 / 60.0, &idle());

@@ -933,6 +933,15 @@ fn light_at(level: &Level, p: Vec3) -> [u8; 4] {
             c[i] += tint[i] * f * 0.85;
         }
     }
+    for l in &level.lamps {
+        let lp = level.centre(l.x, l.y)
+            + Vec3::Y * (level.ceil_h(l.x, l.y) - level.floor_h(l.x, l.y) - 0.4);
+        let f = (1.0 - p.distance(lp) / l.reach).clamp(0.0, 1.0);
+        let f = f * f;
+        for (ci, li) in c.iter_mut().zip(l.color) {
+            *ci += li * f * 0.9;
+        }
+    }
     [
         (c[0].min(1.0) * 255.0) as u8,
         (c[1].min(1.0) * 255.0) as u8,
@@ -948,6 +957,15 @@ struct Batch {
 }
 
 fn add_quad(batches: &mut Vec<Batch>, tex: &'static str, level: &Level, q: [Vec3; 4]) {
+    add_quad_col(batches, tex, q, |p| light_at(level, p));
+}
+
+fn add_quad_col(
+    batches: &mut Vec<Batch>,
+    tex: &'static str,
+    q: [Vec3; 4],
+    color: impl Fn(Vec3) -> [u8; 4],
+) {
     let b = match batches
         .iter()
         .position(|b| b.tex == tex && b.verts.len() + 4 < MAX_VERTS)
@@ -974,7 +992,7 @@ fn add_quad(batches: &mut Vec<Batch>, tex: &'static str, level: &Level, q: [Vec3
         b.verts.push(Vertex {
             position: *p,
             uv,
-            color: light_at(level, *p),
+            color: color(*p),
             normal: Vec4::ZERO,
         });
     }
@@ -989,6 +1007,7 @@ pub fn build_meshes(level: &Level, assets: &Assets) -> Vec<(&'static str, Mesh)>
     for (x, y) in level.floor_tiles() {
         let (x0, z0) = (x as f32 * CELL, y as f32 * CELL);
         let (x1, z1) = (x0 + CELL, z0 + CELL);
+        let (fy, cy) = (level.floor_h(x, y), level.ceil_h(x, y));
         let kind = level.room_at(x, y).map(|r| r.kind);
         let floor = match kind {
             Some(RoomKind::Reactor) => "floor_hazard",
@@ -1007,10 +1026,10 @@ pub fn build_meshes(level: &Level, assets: &Assets) -> Vec<(&'static str, Mesh)>
             floor,
             level,
             [
-                Vec3::new(x0, 0.0, z1),
-                Vec3::new(x1, 0.0, z1),
-                Vec3::new(x1, 0.0, z0),
-                Vec3::new(x0, 0.0, z0),
+                Vec3::new(x0, fy, z1),
+                Vec3::new(x1, fy, z1),
+                Vec3::new(x1, fy, z0),
+                Vec3::new(x0, fy, z0),
             ],
         );
         let ceil = if (x + y) % 2 == 0 {
@@ -1023,10 +1042,10 @@ pub fn build_meshes(level: &Level, assets: &Assets) -> Vec<(&'static str, Mesh)>
             ceil,
             level,
             [
-                Vec3::new(x0, WALL_H, z0),
-                Vec3::new(x1, WALL_H, z0),
-                Vec3::new(x1, WALL_H, z1),
-                Vec3::new(x0, WALL_H, z1),
+                Vec3::new(x0, cy, z0),
+                Vec3::new(x1, cy, z0),
+                Vec3::new(x1, cy, z1),
+                Vec3::new(x0, cy, z1),
             ],
         );
         let wall = |i: i32| walls[(i.rem_euclid(2)) as usize];
@@ -1036,39 +1055,78 @@ pub fn build_meshes(level: &Level, assets: &Assets) -> Vec<(&'static str, Mesh)>
             Some(RoomKind::Airlock) => "wall_viking_a",
             _ => wall(x / 3 + y / 3),
         };
-        // walls facing into this tile
+        // faces on the tile's four edges: walls, stair risers (neighbour floor higher) and
+        // ceiling drops (neighbour ceiling lower)
         for (dx, dy) in [(-1, 0), (1, 0), (0, -1), (0, 1)] {
-            if level.tile(x + dx, y + dy) != crate::board::level::Tile::Wall {
-                continue;
+            let (nx, ny) = (x + dx, y + dy);
+            let spans: Vec<(f32, f32, &'static str)> =
+                if level.tile(nx, ny) == crate::board::level::Tile::Wall {
+                    vec![(fy, cy, tex)]
+                } else {
+                    let mut v = Vec::new();
+                    let nf = level.floor_h(nx, ny);
+                    if nf > fy + 0.001 {
+                        v.push((fy, nf, "floor_hazard"));
+                    }
+                    let nc = level.ceil_h(nx, ny);
+                    if nc < cy - 0.001 {
+                        v.push((nc, cy, tex));
+                    }
+                    v
+                };
+            for (lo, hi, t) in spans {
+                let q = match (dx, dy) {
+                    (-1, 0) => [
+                        Vec3::new(x0, lo, z0),
+                        Vec3::new(x0, lo, z1),
+                        Vec3::new(x0, hi, z1),
+                        Vec3::new(x0, hi, z0),
+                    ],
+                    (1, 0) => [
+                        Vec3::new(x1, lo, z1),
+                        Vec3::new(x1, lo, z0),
+                        Vec3::new(x1, hi, z0),
+                        Vec3::new(x1, hi, z1),
+                    ],
+                    (0, -1) => [
+                        Vec3::new(x1, lo, z0),
+                        Vec3::new(x0, lo, z0),
+                        Vec3::new(x0, hi, z0),
+                        Vec3::new(x1, hi, z0),
+                    ],
+                    _ => [
+                        Vec3::new(x0, lo, z1),
+                        Vec3::new(x1, lo, z1),
+                        Vec3::new(x1, hi, z1),
+                        Vec3::new(x0, hi, z1),
+                    ],
+                };
+                add_quad(&mut batches, t, level, q);
             }
-            let q = match (dx, dy) {
-                (-1, 0) => [
-                    Vec3::new(x0, 0.0, z0),
-                    Vec3::new(x0, 0.0, z1),
-                    Vec3::new(x0, WALL_H, z1),
-                    Vec3::new(x0, WALL_H, z0),
-                ],
-                (1, 0) => [
-                    Vec3::new(x1, 0.0, z1),
-                    Vec3::new(x1, 0.0, z0),
-                    Vec3::new(x1, WALL_H, z0),
-                    Vec3::new(x1, WALL_H, z1),
-                ],
-                (0, -1) => [
-                    Vec3::new(x1, 0.0, z0),
-                    Vec3::new(x0, 0.0, z0),
-                    Vec3::new(x0, WALL_H, z0),
-                    Vec3::new(x1, WALL_H, z0),
-                ],
-                _ => [
-                    Vec3::new(x0, 0.0, z1),
-                    Vec3::new(x1, 0.0, z1),
-                    Vec3::new(x1, WALL_H, z1),
-                    Vec3::new(x0, WALL_H, z1),
-                ],
-            };
-            add_quad(&mut batches, tex, level, q);
         }
+    }
+    // ceiling light fixtures, full bright
+    for l in &level.lamps {
+        let c = level.centre(l.x, l.y);
+        let y = level.ceil_h(l.x, l.y) - 0.02;
+        let (x0, x1, z0, z1) = (c.x - 0.9, c.x + 0.9, c.z - 0.9, c.z + 0.9);
+        let col = [
+            (l.color[0] * 255.0) as u8,
+            (l.color[1] * 255.0) as u8,
+            (l.color[2] * 255.0) as u8,
+            255,
+        ];
+        add_quad_col(
+            &mut batches,
+            "light_panel",
+            [
+                Vec3::new(x0, y, z0),
+                Vec3::new(x1, y, z0),
+                Vec3::new(x1, y, z1),
+                Vec3::new(x0, y, z1),
+            ],
+            |_| col,
+        );
     }
     batches
         .into_iter()

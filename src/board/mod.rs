@@ -3,6 +3,7 @@
 
 pub mod bot;
 pub mod level;
+pub mod map_spirit;
 pub mod maps;
 pub mod monster;
 pub mod pmove;

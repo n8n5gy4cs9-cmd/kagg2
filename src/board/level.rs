@@ -12,6 +12,19 @@ use crate::sim::rng::Rng;
 
 pub const CELL: f32 = 4.0;
 pub const WALL_H: f32 = 3.2;
+/// Highest riser (metres) a walker climbs without jumping; stairs use steps below this.
+pub const STEP_H: f32 = 0.6;
+
+/// A placed light: baked into the level's vertex colours and drawn as a ceiling fixture.
+#[derive(Debug, Clone, Copy)]
+pub struct Lamp {
+    pub x: i32,
+    pub y: i32,
+    /// Linear RGB tint.
+    pub color: [f32; 3],
+    /// Reach in metres.
+    pub reach: f32,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Theme {
@@ -206,9 +219,62 @@ pub struct Level {
     /// Tile of the alarm button.
     pub alarm: (i32, i32),
     pub seed: u64,
+    /// Floor height (metres) per tile; all zero on flat levels.
+    pub floor_h: Vec<f32>,
+    /// Ceiling height (metres) per tile.
+    pub ceil_h: Vec<f32>,
+    /// Extra placed lights (the per-room lamps are added by the renderer).
+    pub lamps: Vec<Lamp>,
 }
 
 impl Level {
+    /// Floor height of a tile (`0` outside the map).
+    pub fn floor_h(&self, x: i32, y: i32) -> f32 {
+        if x < 0 || y < 0 || x >= self.w || y >= self.h {
+            0.0
+        } else {
+            self.floor_h[(y * self.w + x) as usize]
+        }
+    }
+
+    /// Ceiling height of a tile.
+    pub fn ceil_h(&self, x: i32, y: i32) -> f32 {
+        if x < 0 || y < 0 || x >= self.w || y >= self.h {
+            WALL_H
+        } else {
+            self.ceil_h[(y * self.w + x) as usize]
+        }
+    }
+
+    /// Highest floor under a cylinder of `radius` at `p` (what the walker stands on).
+    pub fn ground_at(&self, p: Vec3, radius: f32) -> f32 {
+        self.tiles_under(p, radius)
+            .filter(|&(x, y)| !self.solid(x, y))
+            .map(|(x, y)| self.floor_h(x, y))
+            .fold(0.0, f32::max)
+    }
+
+    /// Lowest ceiling over a cylinder of `radius` at `p`.
+    pub fn ceiling_at(&self, p: Vec3, radius: f32) -> f32 {
+        self.tiles_under(p, radius)
+            .filter(|&(x, y)| !self.solid(x, y))
+            .map(|(x, y)| self.ceil_h(x, y))
+            .fold(f32::MAX, f32::min)
+            .min(WALL_H + 20.0)
+    }
+
+    fn tiles_under(&self, p: Vec3, radius: f32) -> impl Iterator<Item = (i32, i32)> {
+        let (x0, x1) = (
+            ((p.x - radius) / CELL).floor() as i32,
+            ((p.x + radius) / CELL).floor() as i32,
+        );
+        let (z0, z1) = (
+            ((p.z - radius) / CELL).floor() as i32,
+            ((p.z + radius) / CELL).floor() as i32,
+        );
+        (z0..=z1).flat_map(move |z| (x0..=x1).map(move |x| (x, z)))
+    }
+
     pub fn tile(&self, x: i32, y: i32) -> Tile {
         if x < 0 || y < 0 || x >= self.w || y >= self.h {
             Tile::Wall
@@ -227,7 +293,11 @@ impl Level {
 
     /// World position (metres, floor level) of the centre of a tile.
     pub fn centre(&self, x: i32, y: i32) -> Vec3 {
-        Vec3::new((x as f32 + 0.5) * CELL, 0.0, (y as f32 + 0.5) * CELL)
+        Vec3::new(
+            (x as f32 + 0.5) * CELL,
+            self.floor_h(x, y),
+            (y as f32 + 0.5) * CELL,
+        )
     }
 
     pub fn spawn_point(&self) -> Vec3 {
@@ -451,6 +521,9 @@ fn fallback(seed: u64, theme: Theme, objective: Objective) -> Level {
         goal,
         alarm: (3, 4),
         seed,
+        floor_h: vec![0.0; (w * h) as usize],
+        ceil_h: vec![WALL_H; (w * h) as usize],
+        lamps: Vec::new(),
     }
 }
 
@@ -546,6 +619,9 @@ fn try_generate(seed: u64, theme: Theme, objective: Objective, size: u32) -> Opt
         goal: (0, 0),
         alarm: (0, 0),
         seed,
+        floor_h: vec![0.0; (w * h) as usize],
+        ceil_h: vec![WALL_H; (w * h) as usize],
+        lamps: Vec::new(),
     };
     // doors: corridor chokepoints that touch a room
     let in_room = |l: &Level, x: i32, y: i32| l.room_at(x, y).is_some();

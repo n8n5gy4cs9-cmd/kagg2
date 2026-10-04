@@ -43,7 +43,8 @@ Details/acceptance for every task: `PLAN.md`. Do tasks in order unless told othe
 - [x] **T34** Mission scripting: `.k2m` format, parser/validator, registry (ids 11+), `--script`, `~/.kagg2/missions/` loader, example `missions/wolf-pack.k2m` _(v0.35.0)_
 - [x] **T35** Developer console (`` ` ``/F12) + cheats: god, heal, ammo, credits, kill, win, lose, `level N`, `board [N]` (jump to any boarding level), menu, quit _(v0.36.0)_
 - [x] **T36** Boarding levels: three authored Quake-2-style base maps (`board/maps.rs`) for ship sizes 2–5, mirrored by seed, solvability tests; `ASSETS.md` lists what to replace _(v0.37.0)_
+- [x] **T37** Level height + light: per-tile floor/ceiling heights (stairs, daises), step-up/step-down movement, risers + ceiling drops rendered, lamps; maps redrawn with non-box rooms; size-1 map; *Temple Yard* converted from GPL map spirit2dm9 (`tools/q2map.py`, `tools/make_spirit_map.py`) _(v0.38.0)_
 
 ## ⬜ Undone
 
-_(none — all of T01–T36 are done; see `HANDOFF.md` for known gaps and ideas)_
+_(none — all of T01–T37 are done; see `HANDOFF.md` for known gaps and ideas)_

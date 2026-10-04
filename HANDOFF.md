@@ -1,5 +1,10 @@
 # HANDOFF
 
+## State (v0.38.0)
+- **Height + light (T37):** `Level` now has `floor_h`, `ceil_h` (per tile) and `lamps`. `pmove` steps up ≤ `STEP_H` (0.6 m) and sticks to stairs going down; projectiles/monsters follow floor height (`Level::ground_at`, monsters snapped each tick). Renderer draws risers (hazard texture) and ceiling drops, baked lamp light + ceiling fixtures. `maps.rs` has a 3rd layer (heights, base 36 digits = half metres) and lamp glyphs `* ^ &`; 5 maps (Landing Party, Outer Base, Temple Yard, Cargo Deck, Citadel). Authoring helper used this session lived in the scratchpad (`mk2.py`); maps are plain ASCII in `maps.rs` — edit directly.
+- **Temple Yard** = ground level of the GPL map spirit2dm9 (`tools/q2map.py` parses `.map` brushes + voxelises, `tools/make_spirit_map.py` flood-fills the walkable part from a ground spawn, 15×12 tiles). Regenerate: `python3 tools/make_spirit_map.py REFERENCE_tobe_DELETED/spirit2dm9/maps/spirit2dm9.map > src/board/map_spirit.rs` (needs the reference folder; do not delete it without keeping the generated file). Credit in `CREDITS.md`.
+- Bots: missions 4/5/8/9/10 still won (mission 4 lost 1 of 3 seeds on Karl). Bots/monsters path in 2D and never need jumps (all steps ≤ 0.5 m). Not human-played. Next: overlapping floors/lifts, more converted maps, nicer riser/stair textures, door lintels.
+
 ## State (v0.37.0)
 - **Boarding maps (T36):** `src/board/maps.rs` — 3 authored ASCII maps (Outer Base 2–3, Cargo Deck 3–4, Citadel 5), two layers (layout + things), mirrored by seed; `level::generate` uses them for size ≥ 2 and falls back to `generate_random`. Bots still win missions 4/5/8/9/10 (3 seeds each); solo bot survey: size 3 ≈ 3–5/6, size 5 hard (as before; capital ships are meant for partners). Not Quake maps (no map data exists; commercial) — original layouts. Replacement list in `ASSETS.md`. Next: height (stairs/lifts), more maps, an editor-format loader.
 - Fuse test now compares sums over seeds (authored maps make path length seed-dependent).

@@ -127,8 +127,8 @@ in cargo bays (low gravity multiplier).
 | Prefect Voss | supertank | 1 500 | boss, rockets + chain gun, 2 phases |
 | Drone | flyer | 50 | flying, ram + blaster |
 
-### 3.4b Level layouts (v0.37)
-Size 2+ ships use authored base maps (`src/board/maps.rs`: Outer Base, Cargo Deck, Citadel; mirrored by seed) with hubs, pillared halls, loops and bronze/silver/gold locked shortcuts; size 1 uses the random generator. Monster tiers ramp with walking distance from the airlock. Original layouts in the style of Quake 2 bases — no Quake maps or art are used.
+### 3.4b Level layouts (v0.38)
+Every ship is boarded in an authored map (`src/board/maps.rs`: Landing Party, Outer Base, Temple Yard, Cargo Deck, Citadel; mirrored by seed) with non-box rooms, stairs and raised platforms (floor heights in 0.5 m steps, walk-up limit 0.6 m), ceiling lamps, hubs, loops and bronze/silver/gold locked shortcuts. Temple Yard is derived from the GPL Quake 2 map spirit2dm9. The random generator remains only as a fallback. Monster tiers ramp with walking distance from the airlock. Original layouts in the style of Quake 2 bases — no Quake maps or art are used.
 
 ### 3.5 Objectives
 Sabotage reactor (plant charge, then run), Capture bridge (kill all in room), Rescue prisoners

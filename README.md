@@ -5,7 +5,7 @@ bridge-sim space war (inspired by *Space Nerds In Space*), then storm disabled e
 bases in first-person boarding actions (inspired by *Quake 2*). Written in Rust. Single player
 first; a headless LAN multiplayer server, co-op boarding with AI partners and mission scripting are included.
 
-> Status: T01–T36 done (M0–M5: foundation, space, boarding, 10-mission campaign, balance + bot playtest, release tooling, LAN server, co-op boarding, mission scripts) — see [tasks.md](tasks.md).
+> Status: T01–T37 done (M0–M5: foundation, space, boarding, 10-mission campaign, balance + bot playtest, release tooling, LAN server, co-op boarding, mission scripts) — see [tasks.md](tasks.md).
 
 ## Run
 ```sh

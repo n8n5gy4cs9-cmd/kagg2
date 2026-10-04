@@ -4,7 +4,7 @@
 
 use glam::Vec3;
 
-use super::level::{Level, WALL_H};
+use super::level::{Level, STEP_H, WALL_H};
 use super::weapons::{Ammo, Weapon};
 
 pub const RADIUS: f32 = 0.4;
@@ -143,7 +143,9 @@ pub fn collides(level: &Level, pos: Vec3, radius: f32) -> bool {
         ((pos.z - radius) / cell).floor() as i32,
         ((pos.z + radius) / cell).floor() as i32,
     );
-    (z0..=z1).any(|z| (x0..=x1).any(|x| level.solid(x, z)))
+    (z0..=z1).any(|z| {
+        (x0..=x1).any(|x| level.solid(x, z) || level.floor_h(x, z) > pos.y + super::level::STEP_H)
+    })
 }
 
 /// Move by `delta` (xz), sliding along walls; returns the velocity components that were blocked.
@@ -216,14 +218,18 @@ pub fn pmove(level: &Level, p: &mut Player, input: &Input, env: Env, dt: f32) {
     if blocked.1 {
         p.vel.z = 0.0;
     }
+    let was_ground = p.on_ground;
     p.pos.y += p.vel.y * dt;
     let head = if p.crouching { 1.2 } else { 1.8 };
-    if p.pos.y <= 0.0 {
-        p.pos.y = 0.0;
+    let ground = level.ground_at(p.pos, RADIUS);
+    let ceiling = level.ceiling_at(p.pos, RADIUS).max(WALL_H);
+    if p.pos.y <= ground || (was_ground && p.vel.y <= 0.0 && p.pos.y - ground <= STEP_H) {
+        // landed, or glued to the stairs on the way down
+        p.pos.y = ground;
         p.vel.y = 0.0;
         p.on_ground = true;
-    } else if p.pos.y + head >= WALL_H {
-        p.pos.y = WALL_H - head;
+    } else if p.pos.y + head >= ceiling {
+        p.pos.y = ceiling - head;
         p.vel.y = p.vel.y.min(0.0);
         p.on_ground = false;
     } else {
@@ -237,7 +243,7 @@ mod tests {
     use crate::board::level::{Objective, Theme, generate};
 
     fn setup() -> (Level, Player) {
-        let l = generate(3, Theme::Corvette, Objective::CaptureBridge, 2);
+        let l = generate(3, Theme::Corvette, Objective::CaptureBridge, 1);
         let p = Player::new(l.spawn_point());
         (l, p)
     }
